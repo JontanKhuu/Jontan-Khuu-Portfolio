@@ -1,0 +1,18 @@
+{
+  "sections": [
+    {
+      "title": "Frontend",
+      "items": ["React / Next.js", "TypeScript", "CSS / Tailwind"]
+    },
+    {
+      "title": "Backend",
+      "items": ["Node.js", "REST / GraphQL", "Prisma / SQL"]
+    },
+    {
+      "title": "Tooling",
+      "items": ["Git / CI", "Testing", "Perf & A11y"]
+    }
+  ]
+}
+
+

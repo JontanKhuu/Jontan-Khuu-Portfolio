@@ -24,3 +24,189 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Hide Next.js dev indicator (bottom-right "N") in development */
+[data-nextjs-dev-indicator] { display: none !important; }
+
+/* Cork board styles */
+.board-root {
+  min-height: 100vh;
+  display: grid;
+}
+
+.board-viewport {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.board-canvas {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  transform-origin: 0 0;
+}
+
+.board-bg {
+  position: absolute;
+  inset: 0;
+  background-color: #c3a077;
+  background-image: url("/cork.jpg");
+  background-size: 320px 320px; /* tweak to taste */
+  background-repeat: repeat;
+  filter: saturate(0.9) brightness(1.02);
+}
+
+@media (prefers-color-scheme: dark) {
+  .board-bg {
+    background-color: #7a6040;
+    filter: saturate(0.8) brightness(0.9);
+  }
+}
+
+/* Force cork background (override any earlier gradient rules) */
+.board-viewport .board-canvas .board-bg {
+  background-image: url("/cork.jpg") !important;
+  background-size: cover !important;     /* fill area with one image */
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+}
+
+.card-wrap {
+  position: absolute;
+  cursor: pointer;
+}
+
+.card {
+  width: 220px;
+  padding: 16px 16px 14px 16px;
+  background: #fffef5;
+  border-radius: 4px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15), 0 1px 0 rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.06);
+  transform: rotate(0.0001deg);
+  overflow: visible; /* allow pin to render fully */
+  position: relative; /* ensure pin positions relative to card */
+}
+
+.card-large { width: min(560px, 48vw); max-height: calc(100vh - 120px); overflow: visible; }
+.card-header { display: flex; align-items: center; justify-content: space-between; }
+.card-close { background: transparent; border: none; font-size: 22px; line-height: 1; cursor: pointer; }
+/* Scroll container inside large cards so the pin isn't clipped */
+.card-scroll { max-height: calc(100% - 48px); overflow: auto; }
+
+/* Ensure readable text color and link styling inside cards */
+.card,
+.card a {
+  color: #111111;
+  text-decoration: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .card {
+    background: #fdf8dd;
+  }
+}
+
+.card-title {
+  margin: 0 0 6px 0;
+  font-weight: 700;
+}
+
+.card-summary {
+  margin: 0 0 10px 0;
+  color: #1f2937; /* slate-800 for better contrast */
+}
+
+.card-tags {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.card-tags li {
+  font-size: 12px;
+  padding: 2px 8px;
+  background: #e5e7eb; /* neutral gray for higher contrast */
+  color: #111111;
+  border-radius: 999px;
+}
+
+.card-photo {
+  padding: 8px;
+}
+
+.pin {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  background: #c33;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.3);
+  transform: translateX(-50%);
+  z-index: 2; /* render above header/content */
+}
+
+/* Appear animations for pinned Skills card */
+@keyframes cardPop {
+  0% { opacity: 0; transform: scale(0.92); }
+  60% { opacity: 1; transform: scale(1.03); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pinDrop {
+  0% { transform: translate(-50%, -16px); opacity: 0; }
+  60% { transform: translate(-50%, 2px); opacity: 1; }
+  100% { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.card-appear .card { animation: cardPop 280ms ease-out; transform-origin: 50% 0; }
+.pin-appear { animation: pinDrop 340ms cubic-bezier(.2,.9,.2,1.2); }
+
+/* Side panel for Skills */
+.side-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: min(420px, 90vw);
+  background: #fffef5;
+  border-left: 1px solid rgba(0,0,0,0.1);
+  box-shadow: -10px 0 24px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+}
+.side-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.side-panel-close {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.side-panel-content {
+  padding: 16px;
+  overflow: auto;
+}
+.skills-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.card-large .skills-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 1024px) {
+  .card-large .skills-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.skills-columns h3 { margin: 0 0 8px 0; }
+.skills-columns ul { margin: 0; padding-left: 18px; }
