@@ -72,14 +72,16 @@
     {
       "id": "project-2",
       "type": "project",
-      "title": "Project 2",
-      "summary": "Second project"
-    },
-    {
-      "id": "project-3",
-      "type": "project",
-      "title": "Project 3",
-      "summary": "Third project"
+      "title": "Sob-Emoji",
+      "summary": "A multiplayer web game designed using a React frontend and Flask backend. ",
+      "href": "https://github.com/JontanKhuu/cse312-Sob-Emoji",
+      "tags": [
+        "Python",
+        "Flask",
+        "React / Next.js",
+        "MongoDB"
+      ],
+      "images": []
     }
   ]
 }

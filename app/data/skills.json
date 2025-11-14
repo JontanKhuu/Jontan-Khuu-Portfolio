@@ -8,14 +8,16 @@
         "HTML",
         "Scala",
         "C",
-        "Java"
+        "Java",
+        "Python"
       ]
     },
     {
       "title": "Frameworks",
       "items": [
         "React / Next.js",
-        "Node.js"
+        "Node.js",
+        "Flask"
       ]
     },
     {

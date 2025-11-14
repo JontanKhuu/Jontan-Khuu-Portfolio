@@ -4,7 +4,8 @@ import bcrypt from 'bcryptjs';
 
 // Require environment variables in production
 const JWT_SECRET = process.env.JWT_SECRET;
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
+// Read password hash from environment - Next.js loads .env.local automatically
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH?.trim();
 const JWT_EXPIRATION_TIME = process.env.JWT_EXPIRATION_TIME || '24h';
 
 if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
@@ -17,7 +18,6 @@ if (!ADMIN_PASSWORD_HASH && process.env.NODE_ENV === 'production') {
 
 // Fallback for development only
 const FALLBACK_SECRET = 'dev-secret-key-change-in-production';
-const FALLBACK_PASSWORD = 'admin123';
 
 // Helper function to convert expiration time string to seconds
 // Supports formats like "24h", "7d", "30m", "3600s", etc.
@@ -70,11 +70,27 @@ export async function verifyAdmin(): Promise<boolean> {
 
 export async function createAdminToken(): Promise<string> {
   const secret = JWT_SECRET || FALLBACK_SECRET;
-  return jwt.sign(
-    { admin: true },
-    secret,
-    { expiresIn: JWT_EXPIRATION_TIME }
-  );
+  if (!secret) {
+    throw new Error('JWT secret is required');
+  }
+  // Use callback form to satisfy TypeScript types
+  return new Promise<string>((resolve, reject) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (jwt.sign as any)(
+      { admin: true },
+      secret,
+      { expiresIn: JWT_EXPIRATION_TIME },
+      (err: Error | null, token: string | undefined) => {
+        if (err) {
+          reject(err);
+        } else if (!token) {
+          reject(new Error('Failed to create token'));
+        } else {
+          resolve(token);
+        }
+      }
+    );
+  });
 }
 
 export async function setAdminCookie(token: string) {
@@ -100,21 +116,42 @@ export async function verifyPassword(password: string): Promise<boolean> {
     return false;
   }
   
-  // In production, use hashed password
-  if (ADMIN_PASSWORD_HASH) {
+  // Try bcrypt hash first (more secure, preferred method)
+  if (ADMIN_PASSWORD_HASH && ADMIN_PASSWORD_HASH.length > 0) {
     try {
-      return await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
-    } catch {
-      return false;
+      const isValid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+      if (isValid) {
+        return true;
+      }
+    } catch (error) {
+      console.error('Bcrypt comparison error:', error);
     }
   }
   
-  // Development fallback (warn if used in production)
-  if (process.env.NODE_ENV === 'production') {
-    console.warn('WARNING: Using plain text password in production!');
+  // Fallback: Check for plain text password in development only (less secure)
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD?.trim();
+  if (ADMIN_PASSWORD && process.env.NODE_ENV !== 'production') {
+    // Development: allow plain text password for easier testing
+    if (password === ADMIN_PASSWORD) {
+      console.warn('WARNING: Using plain text password. Use ADMIN_PASSWORD_HASH for better security.');
+      return true;
+    }
   }
   
-  return password === FALLBACK_PASSWORD;
+  // Production: require hash
+  if (process.env.NODE_ENV === 'production') {
+    if (!ADMIN_PASSWORD_HASH) {
+      console.error('ERROR: ADMIN_PASSWORD_HASH must be set in production!');
+    }
+    return false;
+  }
+  
+  // Development: no password set
+  if (!ADMIN_PASSWORD && !ADMIN_PASSWORD_HASH) {
+    console.warn('WARNING: No ADMIN_PASSWORD or ADMIN_PASSWORD_HASH set in .env.local');
+  }
+  
+  return false;
 }
 
 /**

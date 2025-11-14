@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { TabButton } from './components/TabButton';
 import { ImageUpload } from './components/ImageUpload';
 import { SaveButton } from './components/SaveButton';
@@ -21,6 +22,11 @@ interface SkillsData {
   }[];
 }
 
+interface ProjectImage {
+  url: string;
+  description?: string;
+}
+
 interface ProjectItem {
   id: string;
   type: string;
@@ -28,6 +34,8 @@ interface ProjectItem {
   summary?: string;
   href?: string;
   tags?: string[];
+  images?: ProjectImage[];
+  details?: string;
 }
 
 interface ProjectsData {
@@ -65,6 +73,7 @@ export default function AdminPage() {
     title: 'Resume'
   });
   const [uploadingResume, setUploadingResume] = useState(false);
+  const [openTagDropdowns, setOpenTagDropdowns] = useState<{ [key: string]: boolean }>({});
 
   const checkAuth = async () => {
     try {
@@ -83,6 +92,21 @@ export default function AdminPage() {
   useEffect(() => {
     checkAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.tag-dropdown-container')) {
+        setOpenTagDropdowns({});
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -618,24 +642,104 @@ export default function AdminPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1 text-gray-900">Tags (comma-separated)</label>
-                          <input
-                            type="text"
-                            value={project.tags ? project.tags.join(', ') : ''}
-                            onChange={(e) => {
-                              const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-                              const newProjects = {
-                                ...projectsData,
-                                projectItems: projectsData.projectItems.map((p) =>
-                                  p.id === project.id ? { ...p, tags } : p
-                                ),
-                              };
-                              setProjectsData(newProjects);
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white placeholder-gray-500"
-                            placeholder="TypeScript, React / Next.js, Node.js"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Enter skill names that match your skills list</p>
+                          <label className="block text-sm font-medium mb-1 text-gray-900">Tags (select from skills)</label>
+                          <div className="relative tag-dropdown-container">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenTagDropdowns({
+                                  ...openTagDropdowns,
+                                  [project.id]: !openTagDropdowns[project.id],
+                                });
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white text-left flex justify-between items-center"
+                            >
+                              <span className={project.tags && project.tags.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
+                                {project.tags && project.tags.length > 0
+                                  ? `${project.tags.length} skill${project.tags.length > 1 ? 's' : ''} selected`
+                                  : 'Select skills...'}
+                              </span>
+                              <svg
+                                className={`w-4 h-4 transition-transform ${openTagDropdowns[project.id] ? 'rotate-180' : ''}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {openTagDropdowns[project.id] && (
+                              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                {(() => {
+                                  // Flatten all skills from all sections
+                                  const allSkills = skillsData.sections.flatMap(section => section.items);
+                                  const selectedTags = project.tags || [];
+                                  
+                                  return allSkills.map((skill) => {
+                                    const isSelected = selectedTags.includes(skill);
+                                    return (
+                                      <label
+                                        key={skill}
+                                        className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={isSelected}
+                                          onChange={(e) => {
+                                            const newTags = e.target.checked
+                                              ? [...selectedTags, skill]
+                                              : selectedTags.filter(tag => tag !== skill);
+                                            const newProjects = {
+                                              ...projectsData,
+                                              projectItems: projectsData.projectItems.map((p) =>
+                                                p.id === project.id ? { ...p, tags: newTags } : p
+                                              ),
+                                            };
+                                            setProjectsData(newProjects);
+                                          }}
+                                          className="mr-2"
+                                        />
+                                        <span className="text-gray-900">{skill}</span>
+                                      </label>
+                                    );
+                                  });
+                                })()}
+                                {skillsData.sections.length === 0 && (
+                                  <div className="px-3 py-2 text-gray-500 text-sm">
+                                    No skills available. Add skills in the Skills tab first.
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          {project.tags && project.tags.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {project.tags.map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="inline-flex items-center px-2 py-1 rounded-md bg-blue-100 text-blue-800 text-sm"
+                                >
+                                  {tag}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newTags = project.tags?.filter(t => t !== tag) || [];
+                                      const newProjects = {
+                                        ...projectsData,
+                                        projectItems: projectsData.projectItems.map((p) =>
+                                          p.id === project.id ? { ...p, tags: newTags } : p
+                                        ),
+                                      };
+                                      setProjectsData(newProjects);
+                                    }}
+                                    className="ml-1 text-blue-600 hover:text-blue-800"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-1 text-gray-900">Link (optional)</label>
@@ -656,9 +760,129 @@ export default function AdminPage() {
                           />
                         </div>
                       </div>
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium mb-2 text-gray-900">Project Details</label>
+                        <textarea
+                          value={project.details || ''}
+                          onChange={(e) => {
+                            const newProjects = {
+                              ...projectsData,
+                              projectItems: projectsData.projectItems.map((p) =>
+                                p.id === project.id ? { ...p, details: e.target.value } : p
+                              ),
+                            };
+                            setProjectsData(newProjects);
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white placeholder-gray-500"
+                          rows={4}
+                          placeholder="Add detailed information about your project..."
+                        />
+                      </div>
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium mb-2 text-gray-900">Project Images</label>
+                        <div className="space-y-4">
+                          {project.images && project.images.map((image, imageIndex) => (
+                            <div key={imageIndex} className="border p-4 rounded-md bg-gray-50">
+                              <div className="flex gap-4">
+                                <div className="flex-shrink-0">
+                                  <Image
+                                    src={image.url}
+                                    alt={image.description || `Project image ${imageIndex + 1}`}
+                                    width={128}
+                                    height={128}
+                                    className="w-32 h-32 object-cover rounded-md border border-gray-300"
+                                    unoptimized
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <label className="block text-sm font-medium mb-1 text-gray-900">Image Description</label>
+                                  <textarea
+                                    value={image.description || ''}
+                                    onChange={(e) => {
+                                      const newImages = [...(project.images || [])];
+                                      newImages[imageIndex] = { ...newImages[imageIndex], description: e.target.value };
+                                      const newProjects = {
+                                        ...projectsData,
+                                        projectItems: projectsData.projectItems.map((p) =>
+                                          p.id === project.id ? { ...p, images: newImages } : p
+                                        ),
+                                      };
+                                      setProjectsData(newProjects);
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white placeholder-gray-500"
+                                    rows={3}
+                                    placeholder="Describe this image..."
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newImages = project.images?.filter((_, i) => i !== imageIndex) || [];
+                                      const newProjects = {
+                                        ...projectsData,
+                                        projectItems: projectsData.projectItems.map((p) =>
+                                          p.id === project.id ? { ...p, images: newImages } : p
+                                        ),
+                                      };
+                                      setProjectsData(newProjects);
+                                    }}
+                                    className="mt-2 bg-red-500 text-white px-3 py-1 rounded-md text-sm hover:bg-red-600"
+                                  >
+                                    Remove Image
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          <div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+
+                                const formData = new FormData();
+                                formData.append('file', file);
+
+                                try {
+                                  const res = await fetch('/api/admin/projects/upload', {
+                                    method: 'POST',
+                                    body: formData,
+                                  });
+
+                                  if (res.ok) {
+                                    const data = await res.json();
+                                    const newImages = [...(project.images || []), { url: data.path, description: '' }];
+                                    const newProjects = {
+                                      ...projectsData,
+                                      projectItems: projectsData.projectItems.map((p) =>
+                                        p.id === project.id ? { ...p, images: newImages } : p
+                                      ),
+                                    };
+                                    setProjectsData(newProjects);
+                                  } else {
+                                    const error = await res.json();
+                                    alert(error.error || 'Failed to upload image');
+                                  }
+                                } catch {
+                                  alert('Error uploading image');
+                                }
+                              }}
+                              className="hidden"
+                              id={`project-image-${project.id}`}
+                            />
+                            <label
+                              htmlFor={`project-image-${project.id}`}
+                              className="inline-block bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer hover:bg-blue-600"
+                            >
+                              Add Image
+                            </label>
+                          </div>
+                        </div>
+                      </div>
                       <button
                         onClick={() => deleteProject(project.id)}
-                        className="mt-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
+                        className="mt-4 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
                       >
                         Delete Project
                       </button>

@@ -64,6 +64,8 @@ export async function POST(request: NextRequest) {
     const isValid = await verifyPassword(password);
     
     if (!isValid) {
+      // Log for debugging (remove in production if needed)
+      console.log('Login attempt failed for password length:', password.length);
       return NextResponse.json(
         { error: 'Invalid password' },
         { 

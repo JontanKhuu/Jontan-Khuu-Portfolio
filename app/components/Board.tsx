@@ -48,6 +48,19 @@ export function Board({ files = initialFiles }: Props) {
   // Create skill items from skills data
   const skillsItems = useMemo(() => createSkillsItems(skillsData), []);
   
+  // Count how many projects use each skill as a tag
+  const skillUsageCount = useMemo(() => {
+    const count: { [key: string]: number } = {};
+    projectItems.forEach((project) => {
+      if (project.tags) {
+        project.tags.forEach((tag) => {
+          count[tag] = (count[tag] || 0) + 1;
+        });
+      }
+    });
+    return count;
+  }, []);
+  
   // Get items to display based on current folder
   const displayItems = currentFolder === "skills" 
     ? skillsItems 
@@ -324,10 +337,19 @@ export function Board({ files = initialFiles }: Props) {
                   flexWrap: 'wrap',
                   gap: '12px'
                 }}>
-                  {section.items.map((skill) => {
+                  {[...section.items].sort((a, b) => {
+                    const countA = skillUsageCount[a] || 0;
+                    const countB = skillUsageCount[b] || 0;
+                    // Sort by count descending (highest first), then alphabetically if counts are equal
+                    if (countB !== countA) {
+                      return countB - countA;
+                    }
+                    return a.localeCompare(b);
+                  }).map((skill) => {
                     const skillItem = skillsItems.find(s => 
                       s.id === `skill-${skill.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
                     );
+                    const projectCount = skillUsageCount[skill] || 0;
                     return (
                       <button
                         key={skill}
@@ -347,26 +369,33 @@ export function Board({ files = initialFiles }: Props) {
                           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                           boxShadow: '0 2px 8px rgba(0, 120, 212, 0.2)',
                           position: 'relative',
-                          overflow: 'hidden'
+                          overflow: 'hidden',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.background = '#0078d4';
                           e.currentTarget.style.borderColor = '#0078d4';
                           e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)';
                           e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 120, 212, 0.4)';
-                          const text = e.currentTarget.querySelector('div');
+                          const text = e.currentTarget.querySelector('.skill-text') as HTMLElement;
+                          const count = e.currentTarget.querySelector('.skill-count') as HTMLElement;
                           if (text) text.style.color = '#ffffff';
+                          if (count) count.style.background = 'rgba(255, 255, 255, 0.2)';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.background = '#252526';
                           e.currentTarget.style.borderColor = '#0078d4';
                           e.currentTarget.style.transform = 'translateY(0) scale(1)';
                           e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 120, 212, 0.2)';
-                          const text = e.currentTarget.querySelector('div');
+                          const text = e.currentTarget.querySelector('.skill-text') as HTMLElement;
+                          const count = e.currentTarget.querySelector('.skill-count') as HTMLElement;
                           if (text) text.style.color = '#cccccc';
+                          if (count) count.style.background = '#1e1e1e';
                         }}
                       >
-                        <div style={{
+                        <div className="skill-text" style={{
                           fontWeight: '500',
                           color: '#cccccc',
                           fontSize: '14px',
@@ -376,6 +405,25 @@ export function Board({ files = initialFiles }: Props) {
                         }}>
                           {skill}
                         </div>
+                        {projectCount > 0 && (
+                          <span className="skill-count" style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minWidth: '24px',
+                            height: '24px',
+                            padding: '0 8px',
+                            background: '#1e1e1e',
+                            color: '#0078d4',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            border: '1px solid #0078d4',
+                            transition: 'background 0.3s'
+                          }}>
+                            {projectCount}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -588,7 +636,10 @@ export function Board({ files = initialFiles }: Props) {
       )}
 
       {openContent && openContent.startsWith("project-") && (() => {
-        const project = projectItems.find(p => p.id === openContent);
+        const project = projectItems.find(p => p.id === openContent) as FileItem & { 
+          images?: Array<{ url: string; description?: string }>; 
+          details?: string;
+        };
         if (!project) return null;
         return (
           <ContentPanel title={project.title} onClose={closeContent}>
@@ -651,23 +702,150 @@ export function Board({ files = initialFiles }: Props) {
                     </div>
                   </div>
                 )}
-                <div style={{
-                  padding: '40px',
-                  background: '#252526',
-                  borderRadius: '20px',
-                  marginTop: '24px',
-                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
-                  border: '1px solid #3d3d3d'
-                }}>
-                  <p style={{
-                    margin: 0,
-                    fontSize: '17px',
-                    lineHeight: '1.8',
-                    color: '#cccccc'
+                {project.images && project.images.length > 0 && (
+                  <div style={{
+                    marginBottom: '32px'
                   }}>
-                    Project details will be displayed here. You can add more information about this project.
-                  </p>
-                </div>
+                    <h3 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#e0e0e0',
+                      marginBottom: '16px'
+                    }}>
+                      Project Images
+                    </h3>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '24px'
+                    }}>
+                      {project.images.map((image: { url: string; description?: string }, imageIndex: number) => (
+                        <div
+                          key={imageIndex}
+                          style={{
+                            background: '#252526',
+                            borderRadius: '16px',
+                            overflow: 'hidden',
+                            border: '1px solid #3d3d3d',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                          }}
+                        >
+                          <div style={{
+                            width: '100%',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            background: '#1e1e1e',
+                            padding: '20px'
+                          }}>
+                            <Image
+                              src={image.url}
+                              alt={image.description || `Project image ${imageIndex + 1}`}
+                              width={800}
+                              height={600}
+                              style={{
+                                maxWidth: '100%',
+                                height: 'auto',
+                                borderRadius: '8px'
+                              }}
+                              unoptimized
+                            />
+                          </div>
+                          {image.description && (
+                            <div style={{
+                              padding: '16px 20px',
+                              borderTop: '1px solid #3d3d3d'
+                            }}>
+                              <p style={{
+                                margin: 0,
+                                fontSize: '14px',
+                                lineHeight: '1.6',
+                                color: '#cccccc'
+                              }}>
+                                {image.description}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {project.href && (
+                  <div style={{
+                    marginBottom: '32px',
+                    display: 'flex',
+                    justifyContent: 'center'
+                  }}>
+                    <a
+                      href={project.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '14px 28px',
+                        background: '#0078d4',
+                        color: '#ffffff',
+                        borderRadius: '8px',
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        textDecoration: 'none',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 4px 12px rgba(0, 120, 212, 0.3)',
+                        border: 'none',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#106ebe';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 120, 212, 0.4)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#0078d4';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 120, 212, 0.3)';
+                      }}
+                    >
+                      <span>View Project</span>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                      </svg>
+                    </a>
+                  </div>
+                )}
+                {project.details && (
+                  <div style={{
+                    padding: '40px',
+                    background: '#252526',
+                    borderRadius: '20px',
+                    marginTop: '24px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+                    border: '1px solid #3d3d3d'
+                  }}>
+                    <p style={{
+                      margin: 0,
+                      fontSize: '17px',
+                      lineHeight: '1.8',
+                      color: '#cccccc',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {project.details}
+                    </p>
+                  </div>
+                )}
             </div>
           </ContentPanel>
         );

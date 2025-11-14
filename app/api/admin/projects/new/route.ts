@@ -36,6 +36,8 @@ export async function POST(request: NextRequest) {
       summary: body.summary || '',
       href: body.href,
       tags: body.tags || [],
+      images: body.images || [],
+      details: body.details || '',
     };
 
     // Add to projectItems array
