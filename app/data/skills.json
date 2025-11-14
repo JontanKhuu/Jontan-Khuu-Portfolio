@@ -1,18 +1,30 @@
 {
   "sections": [
     {
-      "title": "Frontend",
-      "items": ["React / Next.js", "TypeScript", "CSS / Tailwind"]
+      "title": "Languages",
+      "items": [
+        "TypeScript",
+        "CSS / Tailwind",
+        "HTML",
+        "Scala",
+        "C",
+        "Java"
+      ]
     },
     {
-      "title": "Backend",
-      "items": ["Node.js", "REST / GraphQL", "Prisma / SQL"]
+      "title": "Frameworks",
+      "items": [
+        "React / Next.js",
+        "Node.js"
+      ]
     },
     {
-      "title": "Tooling",
-      "items": ["Git / CI", "Testing", "Perf & A11y"]
+      "title": "Miscellaneous ",
+      "items": [
+        "RESTful APIs",
+        "PostgreSQL",
+        "MongoDB"
+      ]
     }
   ]
 }
-
-

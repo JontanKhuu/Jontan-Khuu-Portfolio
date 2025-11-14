@@ -1,0 +1,55 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyAdmin } from '@/app/lib/auth';
+import { readFile, writeFile } from 'fs/promises';
+import { join } from 'path';
+
+const PROJECTS_FILE = join(process.cwd(), 'app', 'data', 'projects.json');
+
+export async function POST(request: NextRequest) {
+  try {
+    const isAdmin = await verifyAdmin();
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const fileContents = await readFile(PROJECTS_FILE, 'utf8');
+    const data = JSON.parse(fileContents);
+
+    // Validate project item
+    if (!body.title) {
+      return NextResponse.json(
+        { error: 'Invalid project data' },
+        { status: 400 }
+      );
+    }
+
+    // Generate ID if not provided
+    const projectId = body.id || `project-${Date.now()}`;
+    const newProject = {
+      id: projectId,
+      type: body.type || 'project',
+      title: body.title,
+      summary: body.summary || '',
+      href: body.href,
+      tags: body.tags || [],
+    };
+
+    // Add to projectItems array
+    data.projectItems.push(newProject);
+
+    await writeFile(PROJECTS_FILE, JSON.stringify(data, null, 2), 'utf8');
+
+    return NextResponse.json({ success: true, data: newProject });
+  } catch (error) {
+    console.error('Error adding project:', error);
+    return NextResponse.json(
+      { error: 'Failed to add project' },
+      { status: 500 }
+    );
+  }
+}
+

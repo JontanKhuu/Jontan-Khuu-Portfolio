@@ -1,0 +1,85 @@
+{
+  "initialFiles": [
+    {
+      "id": "about",
+      "type": "about",
+      "title": "About Me",
+      "summary": "A brief introduction to who I am and what I do.",
+      "x": 0,
+      "y": 0,
+      "zIndex": 1
+    },
+    {
+      "id": "skills",
+      "type": "folder",
+      "title": "Skills",
+      "summary": "What I work with",
+      "x": 140,
+      "y": 0,
+      "zIndex": 1
+    },
+    {
+      "id": "projects",
+      "type": "folder",
+      "title": "Projects",
+      "summary": "A collection of my projects and what I've worked on.",
+      "x": 280,
+      "y": 0,
+      "zIndex": 1
+    },
+    {
+      "id": "github",
+      "type": "link",
+      "title": "GitHub",
+      "summary": "My GitHub profile",
+      "href": "https://github.com/JontanKhuu",
+      "x": 0,
+      "y": 140,
+      "zIndex": 1
+    },
+    {
+      "id": "linkedin",
+      "type": "link",
+      "title": "LinkedIn",
+      "summary": "My LinkedIn profile",
+      "href": "https://www.linkedin.com/in/jontan-khuu-9a38a6242",
+      "x": 140,
+      "y": 140,
+      "zIndex": 1
+    },
+    {
+      "id": "resume",
+      "type": "resume",
+      "title": "Resume",
+      "summary": "View my resume",
+      "x": 280,
+      "y": 140,
+      "zIndex": 1
+    }
+  ],
+  "projectItems": [
+    {
+      "id": "project-1",
+      "type": "project",
+      "title": "Test Project",
+      "summary": "A test project demonstrating skill-based filtering",
+      "tags": [
+        "TypeScript",
+        "React / Next.js",
+        "Node.js"
+      ]
+    },
+    {
+      "id": "project-2",
+      "type": "project",
+      "title": "Project 2",
+      "summary": "Second project"
+    },
+    {
+      "id": "project-3",
+      "type": "project",
+      "title": "Project 3",
+      "summary": "Third project"
+    }
+  ]
+}
