@@ -3,11 +3,9 @@ import { verifyAdmin } from '@/app/lib/auth';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
-import { sanitizeFilename, validateFileExtension, validateImageFile } from '@/app/lib/security';
+import { sanitizeFilename, validateImageUpload } from '@/app/lib/security';
 
 const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads', 'resume');
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB for images
-const ALLOWED_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
 
 // Ensure upload directory exists
 async function ensureUploadDir() {
@@ -31,53 +29,11 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
-    if (!file) {
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      );
-    }
+    // Validate image upload
+    const { valid, error: validationError } = await validateImageUpload(file);
+    if (!valid) return validationError!;
 
-    // Validate file size first (before processing)
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: 'File size must be less than 5MB' },
-        { status: 400 }
-      );
-    }
-
-    if (file.size === 0) {
-      return NextResponse.json(
-        { error: 'File is empty' },
-        { status: 400 }
-      );
-    }
-
-    // Validate file extension
     const originalFilename = sanitizeFilename(file.name);
-    if (!validateFileExtension(originalFilename, ALLOWED_EXTENSIONS)) {
-      return NextResponse.json(
-        { error: 'Invalid file type. Only PNG, JPG, JPEG, WebP, and GIF are allowed.' },
-        { status: 400 }
-      );
-    }
-
-    // Validate MIME type
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json(
-        { error: 'File must be an image' },
-        { status: 400 }
-      );
-    }
-
-    // Validate file content (magic bytes)
-    const isValidImage = await validateImageFile(file);
-    if (!isValidImage) {
-      return NextResponse.json(
-        { error: 'Invalid image file' },
-        { status: 400 }
-      );
-    }
 
     // Generate safe filename
     const timestamp = Date.now();

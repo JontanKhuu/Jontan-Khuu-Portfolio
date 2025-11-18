@@ -238,23 +238,14 @@ export default function AdminPage() {
     }
   };
 
-  const deleteProject = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
+  const deleteProject = (id: string) => {
+    if (!confirm('Are you sure you want to delete this project? Changes will be saved when you click the Save button.')) return;
 
-    try {
-      const res = await fetch(`/api/admin/projects/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (res.ok) {
-        alert('Project deleted successfully!');
-        loadData();
-      } else {
-        alert('Failed to delete project');
-      }
-    } catch {
-      alert('Error deleting project');
-    }
+    // Only update local state - don't save to server yet
+    setProjectsData({
+      ...projectsData,
+      projectItems: projectsData.projectItems.filter((p) => p.id !== id),
+    });
   };
 
   const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -291,7 +282,8 @@ export default function AdminPage() {
     }
   };
 
-  const addProject = async () => {
+  const addProject = () => {
+    // Only update local state - don't save to server yet
     const newProject: ProjectItem = {
       id: `project-${Date.now()}`,
       type: 'project',
@@ -300,21 +292,10 @@ export default function AdminPage() {
       tags: [],
     };
 
-    try {
-      const res = await fetch('/api/admin/projects/new', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newProject),
-      });
-
-      if (res.ok) {
-        loadData();
-      } else {
-        alert('Failed to add project');
-      }
-    } catch {
-      alert('Error adding project');
-    }
+    setProjectsData({
+      ...projectsData,
+      projectItems: [...projectsData.projectItems, newProject],
+    });
   };
 
   if (authenticated === null) {

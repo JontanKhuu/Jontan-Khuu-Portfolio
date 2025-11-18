@@ -6,12 +6,11 @@ import { createSkillsItems, getFileIconSrc, type FileItem } from "../data/types"
 import { File } from "./File";
 import { ProjectCard } from "./ProjectCard";
 import { ContentPanel } from "./ContentPanel";
+import { ContactForm } from "./ContactForm";
 import skillsData from "../data/skills.json";
-import aboutData from "../data/about.json";
 import projectsData from "../data/projects.json";
 
 const initialFiles: FileItem[] = projectsData.initialFiles as FileItem[];
-const projectItems: FileItem[] = projectsData.projectItems as FileItem[];
 
 type Props = {
   files?: FileItem[];
@@ -24,6 +23,36 @@ export function Board({ files = initialFiles }: Props) {
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
   const [parentFolder, setParentFolder] = useState<string | null>(null);
   const [resumeData, setResumeData] = useState<{ fileUrl: string | null; title: string } | null>(null);
+  const [projectItems, setProjectItems] = useState<FileItem[]>(projectsData.projectItems as FileItem[]);
+  const [aboutData, setAboutData] = useState<{ title: string; intro: string; details: string[]; imageUrl?: string }>({
+    title: 'About Me',
+    intro: '',
+    details: [],
+  });
+  
+  // Load about data dynamically
+  useEffect(() => {
+    fetch('/api/admin/about')
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setAboutData(data);
+        }
+      })
+      .catch(err => console.error('Error loading about data:', err));
+  }, []);
+  
+  // Load projects data dynamically
+  useEffect(() => {
+    fetch('/api/admin/projects')
+      .then(res => res.json())
+      .then(data => {
+        if (data.projectItems) {
+          setProjectItems(data.projectItems as FileItem[]);
+        }
+      })
+      .catch(err => console.error('Error loading projects data:', err));
+  }, []);
   
   // Load resume data
   useEffect(() => {
@@ -59,7 +88,7 @@ export function Board({ files = initialFiles }: Props) {
       }
     });
     return count;
-  }, []);
+  }, [projectItems]);
   
   // Get items to display based on current folder
   const displayItems = currentFolder === "skills" 
@@ -102,6 +131,12 @@ export function Board({ files = initialFiles }: Props) {
       
       if (rootFile.type === "resume") {
         // Resume should open in content panel
+        setOpenContent(id);
+        return;
+      }
+      
+      if (rootFile.type === "contact") {
+        // Contact form should open in content panel
         setOpenContent(id);
         return;
       }
@@ -908,6 +943,12 @@ export function Board({ files = initialFiles }: Props) {
                 </div>
               )}
           </div>
+        </ContentPanel>
+      )}
+
+      {openContent === "contact" && (
+        <ContentPanel title="Contact Me" onClose={closeContent}>
+          <ContactForm onClose={closeContent} />
         </ContentPanel>
       )}
     </div>

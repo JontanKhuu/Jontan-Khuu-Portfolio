@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyPassword, createAdminToken, setAdminCookie } from '@/app/lib/auth';
-import { rateLimitLogin, getClientIP } from '@/app/lib/security';
+import { rateLimitLogin, getClientIP, createRateLimitHeaders, checkContentLength, parseJsonBody } from '@/app/lib/security';
 
 const MAX_BODY_SIZE = 1024; // 1KB max for login request
+const RATE_LIMIT = 5; // Max requests per 15 minutes
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,34 +16,18 @@ export async function POST(request: NextRequest) {
         { error: 'Too many login attempts. Please try again later.' },
         { 
           status: 429,
-          headers: {
-            'Retry-After': Math.ceil((rateLimit.resetTime - Date.now()) / 1000).toString(),
-            'X-RateLimit-Limit': '5',
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': new Date(rateLimit.resetTime).toISOString(),
-          }
+          headers: createRateLimitHeaders(rateLimit, RATE_LIMIT)
         }
       );
     }
 
     // Check content length
-    const contentLength = request.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
-      return NextResponse.json(
-        { error: 'Request too large' },
-        { status: 413 }
-      );
-    }
+    const contentLengthError = checkContentLength(request, MAX_BODY_SIZE);
+    if (contentLengthError) return contentLengthError;
 
-    const body = await request.json();
-    
-    // Validate input
-    if (!body || typeof body !== 'object') {
-      return NextResponse.json(
-        { error: 'Invalid request' },
-        { status: 400 }
-      );
-    }
+    // Parse and validate JSON body
+    const { body, error: bodyError } = await parseJsonBody(request);
+    if (bodyError) return bodyError;
 
     const { password } = body;
 
@@ -70,11 +55,7 @@ export async function POST(request: NextRequest) {
         { error: 'Invalid password' },
         { 
           status: 401,
-          headers: {
-            'X-RateLimit-Limit': '5',
-            'X-RateLimit-Remaining': rateLimit.remaining.toString(),
-            'X-RateLimit-Reset': new Date(rateLimit.resetTime).toISOString(),
-          }
+          headers: createRateLimitHeaders(rateLimit, RATE_LIMIT)
         }
       );
     }

@@ -115,29 +115,20 @@ export async function verifyPassword(password: string): Promise<boolean> {
   if (!password || typeof password !== 'string') {
     return false;
   }
-  
+
   // Try bcrypt hash first (more secure, preferred method)
   if (ADMIN_PASSWORD_HASH && ADMIN_PASSWORD_HASH.length > 0) {
     try {
       const isValid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
       if (isValid) {
+        console.log("Password is valid");
         return true;
       }
     } catch (error) {
+      console.log("password is not valid");
       console.error('Bcrypt comparison error:', error);
     }
   }
-  
-  // Fallback: Check for plain text password in development only (less secure)
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD?.trim();
-  if (ADMIN_PASSWORD && process.env.NODE_ENV !== 'production') {
-    // Development: allow plain text password for easier testing
-    if (password === ADMIN_PASSWORD) {
-      console.warn('WARNING: Using plain text password. Use ADMIN_PASSWORD_HASH for better security.');
-      return true;
-    }
-  }
-  
   // Production: require hash
   if (process.env.NODE_ENV === 'production') {
     if (!ADMIN_PASSWORD_HASH) {
@@ -145,20 +136,6 @@ export async function verifyPassword(password: string): Promise<boolean> {
     }
     return false;
   }
-  
-  // Development: no password set
-  if (!ADMIN_PASSWORD && !ADMIN_PASSWORD_HASH) {
-    console.warn('WARNING: No ADMIN_PASSWORD or ADMIN_PASSWORD_HASH set in .env.local');
-  }
-  
   return false;
-}
-
-/**
- * Hash a password (use this to generate ADMIN_PASSWORD_HASH)
- * Run this once: node -e "const bcrypt=require('bcryptjs');bcrypt.hash('your-password',10).then(console.log)"
- */
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 10);
 }
 

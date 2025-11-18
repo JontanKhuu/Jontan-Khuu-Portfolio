@@ -55,33 +55,32 @@
       "x": 280,
       "y": 140,
       "zIndex": 1
+    },
+    {
+      "id": "contact",
+      "type": "contact",
+      "title": "Contact Me",
+      "summary": "Send me a message",
+      "x": 0,
+      "y": 280,
+      "zIndex": 1
     }
   ],
   "projectItems": [
     {
-      "id": "project-1",
-      "type": "project",
-      "title": "Test Project",
-      "summary": "A test project demonstrating skill-based filtering",
-      "tags": [
-        "TypeScript",
-        "React / Next.js",
-        "Node.js"
-      ]
-    },
-    {
-      "id": "project-2",
+      "id": "project-1763486501258",
       "type": "project",
       "title": "Sob-Emoji",
-      "summary": "A multiplayer web game designed using a React frontend and Flask backend. ",
-      "href": "https://github.com/JontanKhuu/cse312-Sob-Emoji",
+      "summary": "A web game developed with 3 other people as the final project for a web applications class .",
       "tags": [
         "Python",
-        "Flask",
         "React / Next.js",
+        "Flask",
         "MongoDB"
       ],
-      "images": []
+      "images": [],
+      "details": "",
+      "href": "https://github.com/JontanKhuu/cse312-Sob-Emoji"
     }
   ]
 }
