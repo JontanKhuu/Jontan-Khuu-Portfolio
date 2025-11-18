@@ -7,6 +7,7 @@ import { File } from "./File";
 import { ProjectCard } from "./ProjectCard";
 import { ContentPanel } from "./ContentPanel";
 import { ContactForm } from "./ContactForm";
+import { ScrollView } from "./ScrollView";
 import skillsData from "../data/skills.json";
 import projectsData from "../data/projects.json";
 
@@ -17,6 +18,21 @@ type Props = {
 };
 
 export function Board({ files = initialFiles }: Props) {
+  // View mode state with localStorage persistence
+  // Initialize with 'explorer' to match server render, then sync with localStorage in useEffect
+  const [viewMode, setViewMode] = useState<'explorer' | 'scroll'>('explorer');
+  
+  // Sync viewMode with localStorage after mount (client-side only)
+  // This is necessary to avoid hydration mismatch between server and client
+  // The setState in useEffect is intentional and necessary for localStorage sync
+  useEffect(() => {
+    const saved = localStorage.getItem('viewMode');
+    if ((saved === 'explorer' || saved === 'scroll') && saved !== viewMode) {
+      setViewMode(saved);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [items, setItems] = useState<FileItem[]>(() => files);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [openContent, setOpenContent] = useState<string | null>(null);
@@ -29,10 +45,19 @@ export function Board({ files = initialFiles }: Props) {
     intro: '',
     details: [],
   });
+
+  // Toggle view mode
+  const toggleViewMode = useCallback(() => {
+    const newMode = viewMode === 'explorer' ? 'scroll' : 'explorer';
+    setViewMode(newMode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('viewMode', newMode);
+    }
+  }, [viewMode]);
   
   // Load about data dynamically
   useEffect(() => {
-    fetch('/api/admin/about')
+    fetch('/api/about')
       .then(res => res.json())
       .then(data => {
         if (data) {
@@ -44,7 +69,7 @@ export function Board({ files = initialFiles }: Props) {
   
   // Load projects data dynamically
   useEffect(() => {
-    fetch('/api/admin/projects')
+    fetch('/api/projects')
       .then(res => res.json())
       .then(data => {
         if (data.projectItems) {
@@ -56,7 +81,7 @@ export function Board({ files = initialFiles }: Props) {
   
   // Load resume data
   useEffect(() => {
-    fetch('/api/admin/resume')
+    fetch('/api/resume')
       .then(res => res.json())
       .then(data => {
         setResumeData(data);
@@ -191,6 +216,373 @@ export function Board({ files = initialFiles }: Props) {
     }
   }, [handleBack]);
 
+  // Handle project click in scroll view
+  const handleScrollProjectClick = useCallback((projectId: string) => {
+    setOpenContent(projectId);
+  }, []);
+
+  // Handle skill click in scroll view
+  const handleScrollSkillClick = useCallback((skillId: string) => {
+    setOpenContent(skillId);
+  }, []);
+
+  // Handle resume click in scroll view
+  const handleScrollResumeClick = useCallback(() => {
+    setOpenContent('resume');
+  }, []);
+
+  // If scroll view mode, render ScrollView
+  if (viewMode === 'scroll') {
+    return (
+      <>
+        <ScrollView
+          aboutData={aboutData}
+          projectItems={projectItems}
+          resumeData={resumeData}
+          skillsItems={skillsItems}
+          skillUsageCount={skillUsageCount}
+          onProjectClick={handleScrollProjectClick}
+          onSkillClick={handleScrollSkillClick}
+          onResumeClick={handleScrollResumeClick}
+          onToggleView={toggleViewMode}
+        />
+        {/* Content panels for scroll view */}
+        {openContent && openContent.startsWith("project-") && (() => {
+          const project = projectItems.find(p => p.id === openContent) as FileItem & { 
+            images?: Array<{ url: string; description?: string }>; 
+            details?: string;
+          };
+          if (!project) return null;
+          return (
+            <ContentPanel title={project.title} onClose={() => setOpenContent(null)}>
+              <div style={{
+                maxWidth: '800px',
+                margin: '0 auto'
+              }}>
+                {project.summary && (
+                  <div style={{
+                    padding: '24px',
+                    background: '#252526',
+                    borderRadius: '16px',
+                    marginBottom: '32px',
+                    border: '1px solid #3d3d3d',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                  }}>
+                    <p style={{
+                      margin: 0,
+                      fontSize: '16px',
+                      lineHeight: '1.8',
+                      color: '#cccccc'
+                    }}>
+                      {project.summary}
+                    </p>
+                  </div>
+                )}
+                {project.tags && project.tags.length > 0 && (
+                  <div style={{
+                    marginBottom: '32px'
+                  }}>
+                    <h3 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#e0e0e0',
+                      marginBottom: '16px'
+                    }}>
+                      Technologies Used
+                    </h3>
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '12px'
+                    }}>
+                      {project.tags.map((tag: string) => (
+                        <span
+                          key={tag}
+                          style={{
+                            padding: '8px 16px',
+                            background: '#1e1e1e',
+                            color: '#cccccc',
+                            borderRadius: '12px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            border: '1px solid #3d3d3d'
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {project.images && project.images.length > 0 && (
+                  <div style={{
+                    marginBottom: '32px'
+                  }}>
+                    <h3 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#e0e0e0',
+                      marginBottom: '16px'
+                    }}>
+                      Project Images
+                    </h3>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '24px'
+                    }}>
+                      {project.images.map((image: { url: string; description?: string }, imageIndex: number) => (
+                        <div
+                          key={imageIndex}
+                          style={{
+                            background: '#252526',
+                            borderRadius: '16px',
+                            overflow: 'hidden',
+                            border: '1px solid #3d3d3d',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                          }}
+                        >
+                          <div style={{
+                            width: '100%',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            background: '#1e1e1e',
+                            padding: '20px'
+                          }}>
+                            <Image
+                              src={image.url}
+                              alt={image.description || `Project image ${imageIndex + 1}`}
+                              width={800}
+                              height={600}
+                              style={{
+                                maxWidth: '100%',
+                                height: 'auto',
+                                borderRadius: '8px'
+                              }}
+                              unoptimized
+                            />
+                          </div>
+                          {image.description && (
+                            <div style={{
+                              padding: '16px 20px',
+                              borderTop: '1px solid #3d3d3d'
+                            }}>
+                              <p style={{
+                                margin: 0,
+                                fontSize: '14px',
+                                lineHeight: '1.6',
+                                color: '#cccccc'
+                              }}>
+                                {image.description}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {project.href && (
+                  <div style={{
+                    marginBottom: '32px',
+                    display: 'flex',
+                    justifyContent: 'center'
+                  }}>
+                    <a
+                      href={project.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '14px 28px',
+                        background: '#0078d4',
+                        color: '#ffffff',
+                        borderRadius: '8px',
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        textDecoration: 'none',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 4px 12px rgba(0, 120, 212, 0.3)',
+                        border: 'none',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#106ebe';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 120, 212, 0.4)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#0078d4';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 120, 212, 0.3)';
+                      }}
+                    >
+                      <span>View Project</span>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                      </svg>
+                    </a>
+                  </div>
+                )}
+                {project.details && (
+                  <div style={{
+                    padding: '40px',
+                    background: '#252526',
+                    borderRadius: '20px',
+                    marginTop: '24px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+                    border: '1px solid #3d3d3d'
+                  }}>
+                    <p style={{
+                      margin: 0,
+                      fontSize: '17px',
+                      lineHeight: '1.8',
+                      color: '#cccccc',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {project.details}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </ContentPanel>
+          );
+        })()}
+        {openContent && openContent.startsWith("skill-") && (() => {
+          const skill = skillsItems.find(s => s.id === openContent);
+          if (!skill) return null;
+          
+          const filteredProjects = projectItems.filter((project: FileItem) => {
+            return project.tags && project.tags.includes(skill.title);
+          });
+          
+          return (
+            <ContentPanel title={skill.title} onClose={() => setOpenContent(null)}>
+              {filteredProjects.length > 0 ? (
+                <div>
+                  <h3 style={{
+                    fontSize: '20px',
+                    fontWeight: '600',
+                    color: '#e0e0e0',
+                    marginBottom: '24px',
+                    marginTop: '32px'
+                  }}>
+                    Projects using {skill.title}
+                  </h3>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                    gap: '24px'
+                  }}>
+                    {filteredProjects.map((project: FileItem) => (
+                      <ProjectCard
+                        key={project.id}
+                        project={project}
+                        highlightedTag={skill.title}
+                        onClick={() => handleScrollProjectClick(project.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div style={{
+                  padding: '32px',
+                  background: '#252526',
+                  borderRadius: '16px',
+                  marginTop: '24px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                  border: '1px solid #3d3d3d'
+                }}>
+                  <p style={{
+                    margin: 0,
+                    fontSize: '16px',
+                    lineHeight: '1.8',
+                    color: '#cccccc'
+                  }}>
+                    No projects found using {skill.title} yet.
+                  </p>
+                </div>
+              )}
+            </ContentPanel>
+          );
+        })()}
+        {openContent === "resume" && resumeData && (
+          <ContentPanel title={resumeData.title || "Resume"} onClose={() => setOpenContent(null)}>
+            <div style={{
+              maxWidth: '900px',
+              margin: '0 auto',
+              padding: '20px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'flex-start'
+            }}>
+              {resumeData.fileUrl ? (
+                <div style={{
+                  width: '100%',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                }}>
+                  <div style={{
+                    maxWidth: '100%',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    border: '1px solid #3d3d3d',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+                    background: '#1e1e1e'
+                  }}>
+                    <Image
+                      src={resumeData.fileUrl}
+                      alt={resumeData.title || "Resume"}
+                      width={1200}
+                      height={1600}
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        display: 'block'
+                      }}
+                      unoptimized
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div style={{
+                  padding: '40px',
+                  background: '#252526',
+                  borderRadius: '20px',
+                  textAlign: 'center',
+                  border: '1px solid #3d3d3d'
+                }}>
+                  <p style={{
+                    fontSize: '18px',
+                    color: '#cccccc',
+                    margin: 0
+                  }}>
+                    No resume uploaded yet.
+                  </p>
+                </div>
+              )}
+            </div>
+          </ContentPanel>
+        )}
+      </>
+    );
+  }
+
   return (
     <div className="explorer-root">
       <div className="explorer-window">
@@ -306,6 +698,24 @@ export function Board({ files = initialFiles }: Props) {
                 style={{ cursor: currentFolder ? 'pointer' : 'default' }}
               >
                 📁 Portfolio (C:)
+              </div>
+              <div
+                className="nav-item"
+                onClick={toggleViewMode}
+                style={{ cursor: 'pointer' }}
+                title={`Switch to ${viewMode === 'explorer' ? 'Scroll' : 'Explorer'} view`}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Image
+                    src="/Text-Icon.png"
+                    alt=""
+                    width={16}
+                    height={16}
+                    style={{ width: '16px', height: '16px' }}
+                    unoptimized
+                  />
+                  Switch layout
+                </span>
               </div>
             </div>
           </div>
@@ -620,9 +1030,10 @@ export function Board({ files = initialFiles }: Props) {
                 background: '#252526',
                 borderRadius: '20px',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-                textAlign: 'center',
+                textAlign: 'left',
                 fontWeight: '400',
-                border: '1px solid #3d3d3d'
+                border: '1px solid #3d3d3d',
+                whiteSpace: 'pre-wrap'
               }}>
                 {aboutData.intro}
               </p>

@@ -11,7 +11,7 @@ export function ContactForm({ onClose }: ContactFormProps) {
     name: "",
     email: "",
     message: "",
-    website: "", // Honeypot field - should remain empty
+    website: "", // Hidden field
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{
@@ -201,7 +201,7 @@ export function ContactForm({ onClose }: ContactFormProps) {
           />
         </div>
 
-        {/* Honeypot field - hidden from users, but bots will fill it */}
+        {/* Hidden field */}
         <div
           style={{
             position: "absolute",

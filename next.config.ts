@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   devIndicators: {
     position: "bottom-right",
   },
+  // Disable source maps in production for security
+  productionBrowserSourceMaps: false,
   async headers() {
     return [
       {
