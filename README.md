@@ -35,18 +35,6 @@ This portfolio website serves as a comprehensive showcase of my work, skills, an
 - **TypeScript** - Static type checking
 - **tsx** - TypeScript execution for scripts
 
-## Key Features
-
-- **Windows Explorer UI** - Unique file explorer interface for navigating portfolio content
-- **Admin Panel** - Secure content management system for updating portfolio information
-- **Project Showcase** - Display projects with images, descriptions, tags, and links
-- **Skills Management** - Organized skills by category with project associations
-- **Contact Form** - Secure contact form with spam protection and email notifications
-- **Resume Display** - PDF/image resume viewing capability
-- **Image Upload** - Admin panel for uploading and managing images
-- **Responsive Design** - Mobile-friendly interface that works on all devices
-- **Security Features** - Rate limiting, input validation, XSS protection, and honeypot spam filtering
-
 ## Project Structure
 
 ```
