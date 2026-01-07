@@ -53,16 +53,6 @@ my-website/
 ├── README.md           # This file
 └── STORAGE.md          # Storage system documentation
 ```
-
-## Storage & Deployment
-
-The website uses a storage abstraction layer that makes it easy to switch between local storage (development) and cloud storage (production). See [STORAGE.md](./STORAGE.md) for detailed information about:
-
-- Current storage setup
-- How to configure storage
-- Migration to cloud storage (S3, Cloudinary, etc.)
-- Deployment considerations
-rro
 ## License
 
 This project is licensed under the MIT License.
