@@ -28,7 +28,9 @@ This portfolio website serves as a comprehensive showcase of my work, skills, an
 
 ### Data Storage
 - **JSON Files** - File-based storage for projects, skills, about, and resume data
-- **File System** - Image uploads stored in `public/uploads/` directory
+- **Storage Abstraction Layer** - Flexible storage system supporting local filesystem (development) and cloud storage (production)
+  - Local storage: Files stored in `storage/uploads/` and served from `public/uploads/`
+  - Ready for cloud migration: Easy switch to S3, Cloudinary, etc. via environment configuration
 
 ### Development Tools
 - **ESLint** - Code linting and quality assurance
@@ -44,12 +46,23 @@ my-website/
 │   ├── api/            # API routes for data management
 │   ├── components/     # React components (Board, ProjectCard, etc.)
 │   ├── data/           # JSON data files (projects, skills, about, resume)
-│   └── lib/            # Utility functions (auth, security)
-├── public/             # Static assets and uploaded images
+│   └── lib/            # Utility functions (auth, security, storage)
+├── public/             # Static assets and uploaded images (served publicly)
+├── storage/            # Storage directory for uploads (excluded from git)
 ├── scripts/            # Utility scripts (password generation, testing)
-└── README.md           # This file
+├── README.md           # This file
+└── STORAGE.md          # Storage system documentation
 ```
 
+## Storage & Deployment
+
+The website uses a storage abstraction layer that makes it easy to switch between local storage (development) and cloud storage (production). See [STORAGE.md](./STORAGE.md) for detailed information about:
+
+- Current storage setup
+- How to configure storage
+- Migration to cloud storage (S3, Cloudinary, etc.)
+- Deployment considerations
+rro
 ## License
 
 This project is licensed under the MIT License.

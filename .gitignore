@@ -35,6 +35,9 @@ yarn-error.log*
 
 # user uploads (should not be in version control)
 /public/uploads/*
+/storage/uploads/*
+/storage/*
+!storage/.gitkeep
 
 # vercel
 .vercel

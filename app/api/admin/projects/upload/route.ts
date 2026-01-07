@@ -1,18 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/app/lib/auth';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
 import { sanitizeFilename, validateImageUpload } from '@/app/lib/security';
-
-const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads', 'projects');
-
-// Ensure upload directory exists
-async function ensureUploadDir() {
-  if (!existsSync(UPLOAD_DIR)) {
-    await mkdir(UPLOAD_DIR, { recursive: true });
-  }
-}
+import { uploadFile } from '@/app/lib/storage';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,8 +13,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await ensureUploadDir();
-
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -33,21 +20,17 @@ export async function POST(request: NextRequest) {
     const { valid, error: validationError } = await validateImageUpload(file);
     if (!valid) return validationError!;
 
-    const originalFilename = sanitizeFilename(file.name);
+    const originalFilename = sanitizeFilename(file.name) || 'file.jpg';
 
     // Generate safe filename
     const timestamp = Date.now();
     const extension = originalFilename.split('.').pop()?.toLowerCase() || 'png';
     const filename = `project-${timestamp}.${extension}`;
-    const filepath = join(UPLOAD_DIR, filename);
 
-    // Convert file to buffer and save
+    // Convert file to buffer and upload using storage abstraction
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
-
-    // Return the public URL path
-    const publicPath = `/uploads/projects/${filename}`;
+    const publicPath = await uploadFile(buffer, filename, 'projects', file.type);
 
     return NextResponse.json({ 
       success: true, 
