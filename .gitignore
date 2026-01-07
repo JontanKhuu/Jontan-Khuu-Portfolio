@@ -45,3 +45,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#Misc
+DEPLOYMENT.md
+ENV_SETUP.md
+STORAGE.md
+

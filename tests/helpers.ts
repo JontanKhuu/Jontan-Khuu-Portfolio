@@ -22,16 +22,13 @@ export function createMockRequest(
     allHeaders['content-length'] = String(JSON.stringify(body).length);
   }
 
-  const requestInit: RequestInit = {
+  const requestInit = {
     method,
     headers: allHeaders,
-  };
+    ...(body !== undefined && { body: JSON.stringify(body) }),
+  } as RequestInit;
 
-  if (body !== undefined) {
-    requestInit.body = JSON.stringify(body);
-  }
-
-  const request = new NextRequest(url, requestInit);
+  const request = new NextRequest(url, requestInit as any);
 
   // Add cookies if provided
   if (cookies) {
@@ -141,12 +138,12 @@ export async function createFormDataRequest(
   };
   
   const url = 'http://localhost:3000/api/test';
-  const requestInit: RequestInit = {
+  const requestInit = {
     method,
     headers: headers || {},
-  };
+  } as RequestInit;
 
-  const request = new NextRequest(url, requestInit);
+  const request = new NextRequest(url, requestInit as any);
   
   // Mock formData method to return our custom FormData
   Object.defineProperty(request, 'formData', {
