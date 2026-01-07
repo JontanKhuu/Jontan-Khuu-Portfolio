@@ -8,11 +8,16 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH?.trim();
 const JWT_EXPIRATION_TIME = process.env.JWT_EXPIRATION_TIME || '24h';
 
-if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+// Only check at runtime, not during build
+// NEXT_PHASE is set during build, so we skip validation then
+const isBuildTime = process.env.NEXT_PHASE !== undefined;
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (!JWT_SECRET && isProduction && !isBuildTime) {
   throw new Error('JWT_SECRET environment variable is required in production');
 }
 
-if (!ADMIN_PASSWORD_HASH && process.env.NODE_ENV === 'production') {
+if (!ADMIN_PASSWORD_HASH && isProduction && !isBuildTime) {
   throw new Error('ADMIN_PASSWORD_HASH environment variable is required in production');
 }
 
