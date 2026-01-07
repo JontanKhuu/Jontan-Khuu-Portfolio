@@ -53,6 +53,68 @@ my-website/
 ├── README.md           # This file
 └── STORAGE.md          # Storage system documentation
 ```
+## Deployment
+
+### Environment Variables
+
+Before deploying, you need to set up the following environment variables. Create a `.env.local` file (or set them in your hosting platform):
+
+**Required:**
+- `JWT_SECRET` - Generate a secure secret: `openssl rand -base64 32`
+- `ADMIN_PASSWORD_HASH` - Generate using: `node scripts/generate-password-hash.js`
+- `SMTP_HOST` - Your SMTP server hostname
+- `SMTP_PORT` - SMTP port (587 for TLS, 465 for SSL)
+- `SMTP_USER` - Your SMTP username/email
+- `SMTP_PASSWORD` - Your SMTP password
+- `CONTACT_EMAIL` - Email to receive contact form submissions
+
+**Optional:**
+- `JWT_EXPIRATION_TIME` - Token expiration (default: 24h)
+- `STORAGE_TYPE` - Storage type: 'local' (default) or cloud provider
+- `NEXT_PUBLIC_SITE_URL` - Your site URL for SEO (e.g., https://yourdomain.com)
+- `NEXT_PUBLIC_GA_ID` - Google Analytics ID (if using analytics)
+
+See `.env.example` for a complete template (create this file if it doesn't exist).
+
+### Production Checklist
+
+- [ ] Set all required environment variables
+- [ ] Generate secure `JWT_SECRET` (use `openssl rand -base64 32`)
+- [ ] Set `ADMIN_PASSWORD_HASH` (use `scripts/generate-password-hash.js`)
+- [ ] Configure SMTP settings for contact form
+- [ ] Set `NEXT_PUBLIC_SITE_URL` to your actual domain
+- [ ] Update `robots.txt` and `sitemap.ts` with your domain
+- [ ] Update metadata in `app/layout.tsx` with your information
+- [ ] Verify all tests pass (`npm test -- --run`)
+- [ ] Build successfully (`npm run build`)
+- [ ] Test the production build locally (`npm start`)
+- [ ] Set up cloud storage (if not using local storage)
+- [ ] Configure custom domain and SSL certificate
+- [ ] Set up monitoring/analytics (optional)
+
+### Deployment Platforms
+
+**Vercel (Recommended for Next.js):**
+- Automatic deployments from GitHub
+- Environment variables in dashboard
+- Built-in analytics and monitoring
+
+**Other Platforms:**
+- Ensure Node.js 20+ is available
+- Set environment variables in platform dashboard
+- Build command: `npm run build`
+- Start command: `npm start`
+
+### Health Check
+
+The application includes a health check endpoint at `/api/health` that returns:
+- Status: "healthy"
+- Timestamp
+- Uptime
+- Environment
+
+This can be used for monitoring and load balancer health checks.
+
 ## License
 
 This project is licensed under the MIT License.

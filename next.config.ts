@@ -7,6 +7,14 @@ const nextConfig: NextConfig = {
   },
   // Disable source maps in production for security
   productionBrowserSourceMaps: false,
+  // Performance optimizations
+  compress: true,
+  poweredByHeader: false, // Remove X-Powered-By header for security
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    // Add remote patterns if using external images
+    remotePatterns: [],
+  },
   async headers() {
     return [
       {
