@@ -1,0 +1,3 @@
+# This file ensures the storage directory is tracked by git
+# User uploads will be stored here (and excluded from git)
+

@@ -92,6 +92,11 @@ export function getClientIP(request: NextRequest): string {
  * Sanitize filename to prevent path traversal and injection
  */
 export function sanitizeFilename(filename: string): string {
+  // Handle undefined/null
+  if (!filename || typeof filename !== 'string') {
+    return 'file';
+  }
+  
   // Remove path separators and dangerous characters
   let sanitized = filename
     .replace(/[^a-zA-Z0-9._-]/g, '_')

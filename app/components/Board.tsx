@@ -8,7 +8,6 @@ import { ProjectCard } from "./ProjectCard";
 import { ContentPanel } from "./ContentPanel";
 import { ContactForm } from "./ContactForm";
 import { ScrollView } from "./ScrollView";
-import skillsData from "../data/skills.json";
 import projectsData from "../data/projects.json";
 
 const initialFiles: FileItem[] = projectsData.initialFiles as FileItem[];
@@ -44,6 +43,9 @@ export function Board({ files = initialFiles }: Props) {
     title: 'About Me',
     intro: '',
     details: [],
+  });
+  const [skillsData, setSkillsData] = useState<{ sections: { title: string; items: string[] }[] }>({
+    sections: [],
   });
 
   // Toggle view mode
@@ -99,8 +101,20 @@ export function Board({ files = initialFiles }: Props) {
       .catch(err => console.error('Error loading resume data:', err));
   }, []);
   
+  // Load skills data dynamically
+  useEffect(() => {
+    fetch('/api/skills')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.sections) {
+          setSkillsData(data);
+        }
+      })
+      .catch(err => console.error('Error loading skills data:', err));
+  }, []);
+  
   // Create skill items from skills data
-  const skillsItems = useMemo(() => createSkillsItems(skillsData), []);
+  const skillsItems = useMemo(() => createSkillsItems(skillsData), [skillsData]);
   
   // Count how many projects use each skill as a tag
   const skillUsageCount = useMemo(() => {
@@ -240,6 +254,7 @@ export function Board({ files = initialFiles }: Props) {
           projectItems={projectItems}
           resumeData={resumeData}
           skillsItems={skillsItems}
+          skillsData={skillsData}
           skillUsageCount={skillUsageCount}
           onProjectClick={handleScrollProjectClick}
           onSkillClick={handleScrollSkillClick}

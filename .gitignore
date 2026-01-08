@@ -35,6 +35,9 @@ yarn-error.log*
 
 # user uploads (should not be in version control)
 /public/uploads/*
+/storage/uploads/*
+/storage/*
+!storage/.gitkeep
 
 # vercel
 .vercel
@@ -42,3 +45,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#Misc
+DEPLOYMENT.md
+ENV_SETUP.md
+STORAGE.md
+EMAIL_SETUP.md
+DEPLOYMENT_CHECKLIST.md
+ENV_SETUP.md

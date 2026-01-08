@@ -4,13 +4,13 @@ import Image from "next/image";
 import { ProjectCard } from "./ProjectCard";
 import { ContactForm } from "./ContactForm";
 import type { FileItem } from "../data/types";
-import skillsData from "../data/skills.json";
 
 type ScrollViewProps = {
   aboutData: { title: string; intro: string; details: string[]; imageUrl?: string };
   projectItems: FileItem[];
   resumeData: { fileUrl: string | null; title: string } | null;
   skillsItems: FileItem[];
+  skillsData: { sections: { title: string; items: string[] }[] };
   skillUsageCount: { [key: string]: number };
   onProjectClick: (projectId: string) => void;
   onSkillClick: (skillId: string) => void;
@@ -23,6 +23,7 @@ export function ScrollView({
   projectItems,
   resumeData,
   skillsItems,
+  skillsData,
   skillUsageCount,
   onProjectClick,
   onSkillClick,

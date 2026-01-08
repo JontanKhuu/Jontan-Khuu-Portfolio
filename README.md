@@ -28,7 +28,9 @@ This portfolio website serves as a comprehensive showcase of my work, skills, an
 
 ### Data Storage
 - **JSON Files** - File-based storage for projects, skills, about, and resume data
-- **File System** - Image uploads stored in `public/uploads/` directory
+- **Storage Abstraction Layer** - Flexible storage system supporting local filesystem (development) and cloud storage (production)
+  - Local storage: Files stored in `storage/uploads/` and served from `public/uploads/`
+  - Ready for cloud migration: Easy switch to S3, Cloudinary, etc. via environment configuration
 
 ### Development Tools
 - **ESLint** - Code linting and quality assurance
@@ -44,11 +46,25 @@ my-website/
 │   ├── api/            # API routes for data management
 │   ├── components/     # React components (Board, ProjectCard, etc.)
 │   ├── data/           # JSON data files (projects, skills, about, resume)
-│   └── lib/            # Utility functions (auth, security)
-├── public/             # Static assets and uploaded images
+│   └── lib/            # Utility functions (auth, security, storage)
+├── public/             # Static assets and uploaded images (served publicly)
+├── storage/            # Storage directory for uploads (excluded from git)
 ├── scripts/            # Utility scripts (password generation, testing)
-└── README.md           # This file
+├── tests/              # Test files (Vitest)
+├── README.md           # This file
+├── STORAGE.md          # Storage system documentation
+├── DEPLOYMENT.md       # Detailed deployment guide
+├── DEPLOYMENT_CHECKLIST.md  # Pre-deployment checklist
+├── EMAIL_SETUP.md      # Email configuration guide
+└── ENV_SETUP.md        # Environment variables documentation
 ```
+### Deployment Platforms
+
+**Vercel (Recommended for Next.js):**
+- Automatic deployments from GitHub
+- Environment variables in dashboard
+- Built-in analytics and monitoring
+
 
 ## License
 
