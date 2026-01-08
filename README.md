@@ -58,12 +58,6 @@ my-website/
 ├── EMAIL_SETUP.md      # Email configuration guide
 └── ENV_SETUP.md        # Environment variables documentation
 ```
-### Deployment Platforms
-
-**Vercel (Recommended for Next.js):**
-- Automatic deployments from GitHub
-- Environment variables in dashboard
-- Built-in analytics and monitoring
 
 
 ## License
