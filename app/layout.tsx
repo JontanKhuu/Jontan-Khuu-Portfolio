@@ -20,8 +20,8 @@ export const metadata: Metadata = {
   },
   description: "A modern, interactive portfolio website showcasing projects, skills, and professional experience with a unique Windows Explorer-inspired interface.",
   keywords: ["portfolio", "developer", "projects", "skills", "web development"],
-  authors: [{ name: "Your Name" }],
-  creator: "Your Name",
+  authors: [{ name: "Jontan Khuu" }],
+  creator: "Jontan Khuu",
   openGraph: {
     type: "website",
     locale: "en_US",

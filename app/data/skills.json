@@ -25,7 +25,8 @@
       "items": [
         "RESTful APIs",
         "PostgreSQL",
-        "MongoDB"
+        "MongoDB",
+        "CI/CD"
       ]
     }
   ]

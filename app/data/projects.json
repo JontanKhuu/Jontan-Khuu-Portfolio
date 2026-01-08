@@ -81,6 +81,21 @@
       "images": [],
       "details": "",
       "href": "https://github.com/JontanKhuu/cse312-Sob-Emoji"
+    },
+    {
+      "id": "project-1767880682234",
+      "type": "project",
+      "title": "Carbon Footprint Tracker ",
+      "summary": "A full-stack web application for tracking and managing carbon emissions. Built with Python Flask backend, React frontend, PostgreSQL database, and deployed using Docker and CI/CD pipelines.",
+      "tags": [
+        "Python",
+        "TypeScript",
+        "C",
+        "RESTful APIs",
+        "PostgreSQL",
+        "CI/CD"
+      ],
+      "href": "https://github.com/JontanKhuu/Carbon-Footprint-Tracker"
     }
   ]
 }
