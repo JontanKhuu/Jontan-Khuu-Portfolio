@@ -1,15 +1,11 @@
 import { NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
-
-const RESUME_FILE = join(process.cwd(), 'app', 'data', 'resume.json');
+import { readDataFile } from '@/app/lib/data-storage';
+import type { ResumeData } from '@/app/lib/data-types';
 
 export async function GET() {
   try {
-    // Try to read the resume file, if it doesn't exist, return default
     try {
-      const fileContents = await readFile(RESUME_FILE, 'utf8');
-      const data = JSON.parse(fileContents);
+      const data = await readDataFile<ResumeData>('resume.json');
       return NextResponse.json(data);
     } catch (error) {
       // File doesn't exist, return default structure

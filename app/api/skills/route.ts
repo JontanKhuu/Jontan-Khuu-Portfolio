@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
-
-const SKILLS_FILE = join(process.cwd(), 'app', 'data', 'skills.json');
+import { readDataFile } from '@/app/lib/data-storage';
+import type { SkillsData } from '@/app/lib/data-types';
 
 export async function GET() {
   try {
-    const fileContents = await readFile(SKILLS_FILE, 'utf8');
-    const data = JSON.parse(fileContents);
+    const data = await readDataFile<SkillsData>('skills.json');
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error reading skills data:', error);

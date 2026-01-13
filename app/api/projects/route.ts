@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
-
-const PROJECTS_FILE = join(process.cwd(), 'app', 'data', 'projects.json');
+import { readDataFile } from '@/app/lib/data-storage';
+import type { ProjectsData } from '@/app/lib/data-types';
 
 export async function GET() {
   try {
-    const fileContents = await readFile(PROJECTS_FILE, 'utf8');
-    const data = JSON.parse(fileContents);
+    const data = await readDataFile<ProjectsData>('projects.json');
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error reading projects data:', error);
