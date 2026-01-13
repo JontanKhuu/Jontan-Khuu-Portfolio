@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/app/lib/auth';
 import { readDataFile, writeDataFile } from '@/app/lib/data-storage';
+import type { ProjectsData, ProjectItem } from '@/app/lib/data-types';
 
 export async function GET() {
   try {
-    const data = await readDataFile('projects.json');
+    const data = await readDataFile<ProjectsData>('projects.json');
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error reading projects data:', error);
@@ -27,7 +28,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Check content length
     const contentLength = request.headers.get('content-length');
     if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
       return NextResponse.json(
@@ -38,7 +38,6 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
     
-    // Validate the structure
     if (!body.initialFiles || !Array.isArray(body.initialFiles) ||
         !body.projectItems || !Array.isArray(body.projectItems)) {
       return NextResponse.json(
@@ -47,16 +46,13 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Validate each file item
-    const validateFileItem = (item: any, isProject: boolean) => {
+    const validateFileItem = (item: ProjectItem, isProject: boolean): boolean => {
       if (!item.id || !item.type || !item.title) {
         return false;
       }
-      // initialFiles need x and y coordinates for positioning on the board
       if (!isProject && (typeof item.x !== 'number' || typeof item.y !== 'number')) {
         return false;
       }
-      // projectItems don't need x and y (they're displayed in a grid)
       if (isProject && item.type !== 'project') {
         return false;
       }
@@ -81,7 +77,6 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Write to file
     await writeDataFile('projects.json', body);
 
     return NextResponse.json({ success: true, data: body });

@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/app/lib/auth';
 import { readDataFile, writeDataFile } from '@/app/lib/data-storage';
+import type { ResumeData } from '@/app/lib/data-types';
 
 export async function GET() {
   try {
-    // Try to read the resume file, if it doesn't exist, return default
     try {
-      const data = await readDataFile('resume.json');
+      const data = await readDataFile<ResumeData>('resume.json');
       return NextResponse.json(data);
     } catch (error) {
-      // File doesn't exist, return default structure
       return NextResponse.json({
         fileUrl: null,
         title: 'Resume'
@@ -34,9 +33,8 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body = await request.json() as ResumeData;
     
-    // Validate the structure
     if (typeof body.fileUrl !== 'string' && body.fileUrl !== null) {
       return NextResponse.json(
         { error: 'Invalid data structure' },
@@ -44,7 +42,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Write to file
     await writeDataFile('resume.json', body);
 
     return NextResponse.json({ success: true, data: body });

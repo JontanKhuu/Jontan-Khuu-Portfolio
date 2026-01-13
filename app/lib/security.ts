@@ -252,7 +252,9 @@ export function checkContentLength(request: NextRequest, maxSize: number): NextR
 /**
  * Validate and parse JSON body
  */
-export async function parseJsonBody(request: NextRequest): Promise<{ body: any; error: NextResponse | null }> {
+export async function parseJsonBody<T = Record<string, unknown>>(
+  request: NextRequest
+): Promise<{ body: T | null; error: NextResponse | null }> {
   try {
     const body = await request.json();
     if (!body || typeof body !== 'object') {

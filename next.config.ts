@@ -1,18 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   devIndicators: {
     position: "bottom-right",
   },
-  // Disable source maps in production for security
   productionBrowserSourceMaps: false,
-  // Performance optimizations
   compress: true,
-  poweredByHeader: false, // Remove X-Powered-By header for security
+  poweredByHeader: false,
   images: {
     formats: ['image/avif', 'image/webp'],
-    // Add remote patterns if using external images
     remotePatterns: [],
   },
   async headers() {
@@ -35,10 +31,6 @@ const nextConfig: NextConfig = {
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff'
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block'
           },
           {
             key: 'Referrer-Policy',

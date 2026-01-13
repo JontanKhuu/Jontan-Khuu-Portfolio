@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/app/lib/auth';
 import { readDataFile, writeDataFile } from '@/app/lib/data-storage';
+import type { ProjectsData, ProjectItem } from '@/app/lib/data-types';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,10 +13,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const data = await readDataFile('projects.json');
+    const body = await request.json() as Partial<ProjectItem>;
+    const data = await readDataFile<ProjectsData>('projects.json');
 
-    // Validate project item
     if (!body.title) {
       return NextResponse.json(
         { error: 'Invalid project data' },
@@ -23,9 +23,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate ID if not provided
     const projectId = body.id || `project-${Date.now()}`;
-    const newProject = {
+    const newProject: ProjectItem = {
       id: projectId,
       type: body.type || 'project',
       title: body.title,
@@ -36,7 +35,6 @@ export async function POST(request: NextRequest) {
       details: body.details || '',
     };
 
-    // Add to projectItems array
     data.projectItems.push(newProject);
 
     await writeDataFile('projects.json', data);

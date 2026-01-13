@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/app/lib/auth';
 import { readDataFile, writeDataFile } from '@/app/lib/data-storage';
+import type { ProjectsData } from '@/app/lib/data-types';
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -13,10 +14,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       );
     }
 
-    const data = await readDataFile('projects.json');
+    const data = await readDataFile<ProjectsData>('projects.json');
 
-    // Remove project from projectItems
-    data.projectItems = data.projectItems.filter((item: any) => item.id !== id);
+    data.projectItems = data.projectItems.filter((item) => item.id !== id);
 
     await writeDataFile('projects.json', data);
 

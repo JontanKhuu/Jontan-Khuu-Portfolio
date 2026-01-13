@@ -4,14 +4,15 @@
  * This module provides a unified interface for file storage that can work
  * with local filesystem (development) and cloud storage (production).
  * 
- * To switch to cloud storage in the future, implement the StorageProvider
- * interface for your chosen service (S3, Cloudinary, etc.) and update
- * the getStorageProvider function.
+ * Supports:
+ * - Local filesystem storage (development)
+ * - Vercel Blob storage (production/serverless)
  */
 
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { put, del } from '@vercel/blob';
 
 export interface StorageProvider {
   /**
@@ -36,6 +37,85 @@ export interface StorageProvider {
 }
 
 /**
+ * Detect if we're running in a serverless environment
+ */
+function isServerless(): boolean {
+  return process.cwd().startsWith('/var/task') || 
+         process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined ||
+         process.env.VERCEL !== undefined;
+}
+
+/**
+ * Vercel Blob storage provider
+ * Stores files in Vercel Blob storage for serverless environments
+ */
+class VercelBlobStorageProvider implements StorageProvider {
+  private token: string | undefined;
+
+  constructor() {
+    this.token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!this.token) {
+      console.warn('[STORAGE] BLOB_READ_WRITE_TOKEN not set. Vercel Blob storage will not work.');
+    }
+  }
+
+  async upload(
+    buffer: Buffer,
+    filename: string,
+    folder: string,
+    contentType?: string
+  ): Promise<string> {
+    if (!this.token) {
+      throw new Error('BLOB_READ_WRITE_TOKEN is required for Vercel Blob storage');
+    }
+
+    const path = `uploads/${folder}/${filename}`;
+
+    try {
+      const blob = await put(path, buffer, {
+        access: 'public',
+        token: this.token,
+        contentType: contentType || 'application/octet-stream',
+      });
+
+      return blob.url;
+    } catch (error) {
+      console.error('Error uploading to Vercel Blob:', error);
+      throw error;
+    }
+  }
+
+  async delete(urlOrPath: string): Promise<void> {
+    if (!this.token) {
+      console.warn('[STORAGE] Cannot delete: BLOB_READ_WRITE_TOKEN not set');
+      return;
+    }
+
+    try {
+      if (!urlOrPath.startsWith('http')) {
+        console.warn(
+          `[STORAGE] Cannot delete Vercel Blob file with path only: ${urlOrPath}. ` +
+          `Full URL is required. The file may not be deleted.`
+        );
+        return;
+      }
+
+      await del(urlOrPath, { token: this.token });
+    } catch (error) {
+      console.error(`Error deleting from Vercel Blob: ${urlOrPath}`, error);
+      // Don't throw - file might not exist or already be deleted
+    }
+  }
+
+  getPublicUrl(path: string): string {
+    if (path.startsWith('http')) {
+      return path;
+    }
+    return path;
+  }
+}
+
+/**
  * Local filesystem storage provider
  * Stores files in storage/uploads/ directory and serves them via public/uploads/
  */
@@ -44,10 +124,13 @@ class LocalStorageProvider implements StorageProvider {
   private publicDir: string;
 
   constructor() {
-    // Store files outside public directory for better organization
-    this.storageDir = join(process.cwd(), 'storage', 'uploads');
-    // Public directory for serving files
-    this.publicDir = join(process.cwd(), 'public', 'uploads');
+    if (isServerless()) {
+      this.storageDir = '/tmp/storage/uploads';
+      this.publicDir = '/tmp/public/uploads';
+    } else {
+      this.storageDir = join(process.cwd(), 'storage', 'uploads');
+      this.publicDir = join(process.cwd(), 'public', 'uploads');
+    }
   }
 
   async ensureDirectories(folder: string): Promise<void> {
@@ -73,17 +156,20 @@ class LocalStorageProvider implements StorageProvider {
     const storagePath = join(this.storageDir, folder, filename);
     const publicPath = join(this.publicDir, folder, filename);
 
-    // Write to both storage and public directories
-    // In production with cloud storage, we'd only write to cloud
     await writeFile(storagePath, buffer);
     await writeFile(publicPath, buffer);
 
-    // Return the public URL path
+    if (isServerless()) {
+      console.warn(
+        `[SERVERLESS] File uploaded to ${publicPath} but won't be accessible via web URLs. ` +
+        `Consider using cloud storage (S3, Cloudinary, Vercel Blob) for production.`
+      );
+    }
+
     return this.getPublicUrl(join(folder, filename));
   }
 
   async delete(urlOrPath: string): Promise<void> {
-    // Extract the path from URL if needed
     const path = urlOrPath.startsWith('/') 
       ? urlOrPath.replace('/uploads/', '')
       : urlOrPath;
@@ -91,7 +177,6 @@ class LocalStorageProvider implements StorageProvider {
     const storagePath = join(this.storageDir, path);
     const publicPath = join(this.publicDir, path);
 
-    // Delete from both locations
     try {
       if (existsSync(storagePath)) {
         const { unlink } = await import('fs/promises');
@@ -108,7 +193,6 @@ class LocalStorageProvider implements StorageProvider {
   }
 
   getPublicUrl(path: string): string {
-    // Remove leading slash if present, then add /uploads/ prefix
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
     if (cleanPath.startsWith('uploads/')) {
       return `/${cleanPath}`;
@@ -120,33 +204,33 @@ class LocalStorageProvider implements StorageProvider {
 /**
  * Get the storage provider based on environment configuration
  * 
- * Currently returns LocalStorageProvider. In the future, you can:
- * 1. Check process.env.STORAGE_TYPE === 's3' | 'cloudinary' | etc.
- * 2. Return the appropriate provider
- * 3. Add cloud storage implementations
+ * Automatically uses Vercel Blob if:
+ * - STORAGE_TYPE is set to 'vercel-blob', OR
+ * - In serverless environment (VERCEL env var set) AND BLOB_READ_WRITE_TOKEN is available
+ * 
+ * Otherwise falls back to LocalStorageProvider
  */
 export function getStorageProvider(): StorageProvider {
-  const storageType = process.env.STORAGE_TYPE || 'local';
+  const storageType = process.env.STORAGE_TYPE || 'auto';
+  const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN;
+  const isVercel = process.env.VERCEL !== undefined;
 
-  switch (storageType) {
-    case 'local':
-      return new LocalStorageProvider();
-    
-    // Future implementations:
-    // case 's3':
-    //   return new S3StorageProvider();
-    // case 'cloudinary':
-    //   return new CloudinaryStorageProvider();
-    
-    default:
-      console.warn(`Unknown storage type: ${storageType}, falling back to local`);
-      return new LocalStorageProvider();
+  if (storageType === 'auto' || storageType === 'vercel-blob') {
+    if (hasBlobToken && (isVercel || isServerless())) {
+      return new VercelBlobStorageProvider();
+    }
+    if (storageType === 'vercel-blob' && !hasBlobToken) {
+      console.warn('[STORAGE] STORAGE_TYPE is "vercel-blob" but BLOB_READ_WRITE_TOKEN is not set. Falling back to local storage.');
+    }
   }
+
+  if (storageType === 'local' || !hasBlobToken || (!isVercel && !isServerless())) {
+    return new LocalStorageProvider();
+  }
+
+  return new LocalStorageProvider();
 }
 
-/**
- * Convenience function to upload a file
- */
 export async function uploadFile(
   buffer: Buffer,
   filename: string,
@@ -157,17 +241,11 @@ export async function uploadFile(
   return storage.upload(buffer, filename, folder, contentType);
 }
 
-/**
- * Convenience function to delete a file
- */
 export async function deleteFile(urlOrPath: string): Promise<void> {
   const storage = getStorageProvider();
   return storage.delete(urlOrPath);
 }
 
-/**
- * Get public URL for a file path
- */
 export function getFileUrl(path: string): string {
   const storage = getStorageProvider();
   return storage.getPublicUrl(path);
