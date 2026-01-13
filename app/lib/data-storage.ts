@@ -32,8 +32,25 @@ function getKVKey(filename: string): string {
 async function readFromKV(filename: string): Promise<string | null> {
   try {
     const key = getKVKey(filename);
-    const data = await kv.get<string>(key);
-    return data;
+    const data = await kv.get(key);
+    
+    // Handle both string and object cases
+    if (data === null || data === undefined) {
+      return null;
+    }
+    
+    // If it's already a string, return it
+    if (typeof data === 'string') {
+      return data;
+    }
+    
+    // If it's an object, stringify it (this handles cases where KV auto-parsed JSON)
+    if (typeof data === 'object') {
+      return JSON.stringify(data);
+    }
+    
+    // Fallback: convert to string
+    return String(data);
   } catch (error) {
     console.error(`Error reading from KV for ${filename}:`, error);
     return null;
