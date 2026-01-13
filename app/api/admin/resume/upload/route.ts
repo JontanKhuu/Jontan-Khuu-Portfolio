@@ -32,6 +32,16 @@ export async function POST(request: NextRequest) {
     // Normalize path separators (Windows backslashes to forward slashes)
     const normalizedPath = publicPath.replace(/\\/g, '/');
 
+    // Log for debugging
+    console.log('[UPLOAD] Resume file uploaded:', {
+      filename,
+      originalPath: publicPath,
+      normalizedPath,
+      isVercelBlobUrl: normalizedPath.startsWith('https://'),
+      bufferSize: buffer.length,
+      contentType: file.type,
+    });
+
     return NextResponse.json({ 
       success: true, 
       path: normalizedPath,
