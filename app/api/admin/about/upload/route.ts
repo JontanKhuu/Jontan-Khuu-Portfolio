@@ -29,9 +29,22 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
     const publicPath = await uploadFile(buffer, filename, 'about', file.type);
 
+    // Normalize path separators (Windows backslashes to forward slashes)
+    const normalizedPath = publicPath.replace(/\\/g, '/');
+
+    // Log for debugging
+    console.log('[UPLOAD] About image uploaded:', {
+      filename,
+      originalPath: publicPath,
+      normalizedPath,
+      isVercelBlobUrl: normalizedPath.startsWith('https://'),
+      bufferSize: buffer.length,
+      contentType: file.type,
+    });
+
     return NextResponse.json({ 
       success: true, 
-      path: publicPath,
+      path: normalizedPath,
       filename: filename
     });
   } catch (error) {

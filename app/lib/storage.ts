@@ -1,12 +1,8 @@
 /**
  * Storage abstraction layer for file uploads
  * 
- * This module provides a unified interface for file storage that can work
- * with local filesystem (development) and cloud storage (production).
- * 
- * Supports:
- * - Local filesystem storage (development)
- * - Vercel Blob storage (production/serverless)
+ * Uses Vercel Blob storage if BLOB_READ_WRITE_TOKEN is set.
+ * Falls back to local filesystem storage if token is not available (for local development).
  */
 
 import { writeFile, mkdir } from 'fs/promises';
@@ -38,6 +34,7 @@ export interface StorageProvider {
 
 /**
  * Detect if we're running in a serverless environment
+ * Used by LocalStorageProvider to determine if /tmp should be used
  */
 function isServerless(): boolean {
   return process.cwd().startsWith('/var/task') || 
@@ -202,32 +199,19 @@ class LocalStorageProvider implements StorageProvider {
 }
 
 /**
- * Get the storage provider based on environment configuration
+ * Get the storage provider based on BLOB_READ_WRITE_TOKEN availability
  * 
- * Automatically uses Vercel Blob if:
- * - STORAGE_TYPE is set to 'vercel-blob', OR
- * - In serverless environment (VERCEL env var set) AND BLOB_READ_WRITE_TOKEN is available
- * 
- * Otherwise falls back to LocalStorageProvider
+ * Uses Vercel Blob if BLOB_READ_WRITE_TOKEN is set, otherwise falls back to local storage
  */
 export function getStorageProvider(): StorageProvider {
-  const storageType = process.env.STORAGE_TYPE || 'auto';
   const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN;
-  const isVercel = process.env.VERCEL !== undefined;
 
-  if (storageType === 'auto' || storageType === 'vercel-blob') {
-    if (hasBlobToken && (isVercel || isServerless())) {
-      return new VercelBlobStorageProvider();
-    }
-    if (storageType === 'vercel-blob' && !hasBlobToken) {
-      console.warn('[STORAGE] STORAGE_TYPE is "vercel-blob" but BLOB_READ_WRITE_TOKEN is not set. Falling back to local storage.');
-    }
+  if (hasBlobToken) {
+    console.log('[STORAGE] Using Vercel Blob storage');
+    return new VercelBlobStorageProvider();
   }
 
-  if (storageType === 'local' || !hasBlobToken || (!isVercel && !isServerless())) {
-    return new LocalStorageProvider();
-  }
-
+  console.warn('[STORAGE] BLOB_READ_WRITE_TOKEN not set. Using local storage (files won\'t persist in production).');
   return new LocalStorageProvider();
 }
 

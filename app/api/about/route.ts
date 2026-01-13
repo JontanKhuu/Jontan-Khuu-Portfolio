@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
-
-const ABOUT_FILE = join(process.cwd(), 'app', 'data', 'about.json');
+import { readDataFile } from '@/app/lib/data-storage';
+import type { AboutData } from '@/app/lib/data-types';
 
 export async function GET() {
   try {
-    const fileContents = await readFile(ABOUT_FILE, 'utf8');
-    const data = JSON.parse(fileContents);
+    const data = await readDataFile<AboutData>('about.json');
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error reading about data:', error);
