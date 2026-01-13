@@ -69,7 +69,6 @@ class VercelBlobStorageProvider implements StorageProvider {
       throw new Error('BLOB_READ_WRITE_TOKEN is required for Vercel Blob storage');
     }
 
-    // Create path with folder structure: uploads/folder/filename
     const path = `uploads/${folder}/${filename}`;
 
     try {
@@ -79,7 +78,6 @@ class VercelBlobStorageProvider implements StorageProvider {
         contentType: contentType || 'application/octet-stream',
       });
 
-      // Return the public URL
       return blob.url;
     } catch (error) {
       console.error('Error uploading to Vercel Blob:', error);
@@ -94,8 +92,6 @@ class VercelBlobStorageProvider implements StorageProvider {
     }
 
     try {
-      // Vercel Blob requires the full URL for deletion
-      // Uploads return full URLs, which should be stored and used here
       if (!urlOrPath.startsWith('http')) {
         console.warn(
           `[STORAGE] Cannot delete Vercel Blob file with path only: ${urlOrPath}. ` +
@@ -104,7 +100,6 @@ class VercelBlobStorageProvider implements StorageProvider {
         return;
       }
 
-      // Delete using the full URL
       await del(urlOrPath, { token: this.token });
     } catch (error) {
       console.error(`Error deleting from Vercel Blob: ${urlOrPath}`, error);
@@ -113,12 +108,9 @@ class VercelBlobStorageProvider implements StorageProvider {
   }
 
   getPublicUrl(path: string): string {
-    // For Vercel Blob, if it's already a full URL, return it
     if (path.startsWith('http')) {
       return path;
     }
-    
-    // Otherwise, return the path as-is (it will be a full URL from upload)
     return path;
   }
 }
@@ -133,15 +125,10 @@ class LocalStorageProvider implements StorageProvider {
 
   constructor() {
     if (isServerless()) {
-      // In serverless, use /tmp for writable storage
-      // NOTE: Files in /tmp won't be accessible via web URLs
-      // You need cloud storage (S3, Cloudinary, etc.) for production
       this.storageDir = '/tmp/storage/uploads';
       this.publicDir = '/tmp/public/uploads';
     } else {
-      // Store files outside public directory for better organization
       this.storageDir = join(process.cwd(), 'storage', 'uploads');
-      // Public directory for serving files
       this.publicDir = join(process.cwd(), 'public', 'uploads');
     }
   }
@@ -169,12 +156,9 @@ class LocalStorageProvider implements StorageProvider {
     const storagePath = join(this.storageDir, folder, filename);
     const publicPath = join(this.publicDir, folder, filename);
 
-    // Write to both storage and public directories
-    // In production with cloud storage, we'd only write to cloud
     await writeFile(storagePath, buffer);
     await writeFile(publicPath, buffer);
 
-    // In serverless, warn that files won't be accessible via web
     if (isServerless()) {
       console.warn(
         `[SERVERLESS] File uploaded to ${publicPath} but won't be accessible via web URLs. ` +
@@ -182,12 +166,10 @@ class LocalStorageProvider implements StorageProvider {
       );
     }
 
-    // Return the public URL path
     return this.getPublicUrl(join(folder, filename));
   }
 
   async delete(urlOrPath: string): Promise<void> {
-    // Extract the path from URL if needed
     const path = urlOrPath.startsWith('/') 
       ? urlOrPath.replace('/uploads/', '')
       : urlOrPath;
@@ -195,7 +177,6 @@ class LocalStorageProvider implements StorageProvider {
     const storagePath = join(this.storageDir, path);
     const publicPath = join(this.publicDir, path);
 
-    // Delete from both locations
     try {
       if (existsSync(storagePath)) {
         const { unlink } = await import('fs/promises');
@@ -212,7 +193,6 @@ class LocalStorageProvider implements StorageProvider {
   }
 
   getPublicUrl(path: string): string {
-    // Remove leading slash if present, then add /uploads/ prefix
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
     if (cleanPath.startsWith('uploads/')) {
       return `/${cleanPath}`;
@@ -235,7 +215,6 @@ export function getStorageProvider(): StorageProvider {
   const hasBlobToken = !!process.env.BLOB_READ_WRITE_TOKEN;
   const isVercel = process.env.VERCEL !== undefined;
 
-  // Auto-detect: use Vercel Blob in serverless if token is available
   if (storageType === 'auto' || storageType === 'vercel-blob') {
     if (hasBlobToken && (isVercel || isServerless())) {
       return new VercelBlobStorageProvider();
@@ -245,18 +224,13 @@ export function getStorageProvider(): StorageProvider {
     }
   }
 
-  // Use local storage for development or when explicitly requested
   if (storageType === 'local' || !hasBlobToken || (!isVercel && !isServerless())) {
     return new LocalStorageProvider();
   }
 
-  // Default fallback
   return new LocalStorageProvider();
 }
 
-/**
- * Convenience function to upload a file
- */
 export async function uploadFile(
   buffer: Buffer,
   filename: string,
@@ -267,17 +241,11 @@ export async function uploadFile(
   return storage.upload(buffer, filename, folder, contentType);
 }
 
-/**
- * Convenience function to delete a file
- */
 export async function deleteFile(urlOrPath: string): Promise<void> {
   const storage = getStorageProvider();
   return storage.delete(urlOrPath);
 }
 
-/**
- * Get public URL for a file path
- */
 export function getFileUrl(path: string): string {
   const storage = getStorageProvider();
   return storage.getPublicUrl(path);

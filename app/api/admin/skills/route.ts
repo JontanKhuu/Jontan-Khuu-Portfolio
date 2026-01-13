@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/app/lib/auth';
 import { readDataFile, writeDataFile } from '@/app/lib/data-storage';
+import type { SkillsData } from '@/app/lib/data-types';
 
 export async function GET() {
   try {
-    const data = await readDataFile('skills.json');
+    const data = await readDataFile<SkillsData>('skills.json');
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error reading skills data:', error);
@@ -25,9 +26,8 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body = await request.json() as SkillsData;
     
-    // Validate the structure
     if (!body.sections || !Array.isArray(body.sections)) {
       return NextResponse.json(
         { error: 'Invalid data structure' },
@@ -35,7 +35,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Validate each section
     for (const section of body.sections) {
       if (!section.title || !Array.isArray(section.items)) {
         return NextResponse.json(
@@ -45,7 +44,6 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Write to file
     await writeDataFile('skills.json', body);
 
     return NextResponse.json({ success: true, data: body });

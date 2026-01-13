@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/app/lib/auth';
 import { readDataFile, writeDataFile } from '@/app/lib/data-storage';
+import type { AboutData } from '@/app/lib/data-types';
 
 export async function GET() {
   try {
-    const data = await readDataFile('about.json');
+    const data = await readDataFile<AboutData>('about.json');
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error reading about data:', error);
@@ -25,9 +26,8 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body = await request.json() as AboutData;
     
-    // Validate the structure (imageUrl is optional)
     if (!body.title || !body.intro || !Array.isArray(body.details)) {
       return NextResponse.json(
         { error: 'Invalid data structure' },
@@ -35,7 +35,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Write to file
     await writeDataFile('about.json', body);
 
     return NextResponse.json({ success: true, data: body });

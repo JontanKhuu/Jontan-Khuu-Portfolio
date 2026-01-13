@@ -26,10 +26,10 @@ export async function POST(request: NextRequest) {
     if (contentLengthError) return contentLengthError;
 
     // Parse and validate JSON body
-    const { body, error: bodyError } = await parseJsonBody(request);
+    const { body, error: bodyError } = await parseJsonBody<{ password: string }>(request);
     if (bodyError) return bodyError;
 
-    const { password } = body;
+    const { password } = body || {};
 
     if (!password || typeof password !== 'string') {
       return NextResponse.json(

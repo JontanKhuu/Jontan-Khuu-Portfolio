@@ -16,18 +16,15 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
-    // Validate image upload
     const { valid, error: validationError } = await validateImageUpload(file);
     if (!valid) return validationError!;
 
     const originalFilename = sanitizeFilename(file.name) || 'file.jpg';
 
-    // Generate safe filename
     const timestamp = Date.now();
     const extension = originalFilename.split('.').pop()?.toLowerCase() || 'png';
     const filename = `project-${timestamp}.${extension}`;
 
-    // Convert file to buffer and upload using storage abstraction
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const publicPath = await uploadFile(buffer, filename, 'projects', file.type);

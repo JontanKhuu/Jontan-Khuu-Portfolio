@@ -14,31 +14,31 @@
     "test:security": "tsx scripts/test-security.ts"
   },
   "dependencies": {
-    "@types/nodemailer": "^7.0.3",
     "@vercel/blob": "^2.0.0",
     "bcryptjs": "^3.0.3",
-    "jsonwebtoken": "^9.0.2",
-    "next": "16.0.7",
-    "nodemailer": "^7.0.10",
-    "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "jsonwebtoken": "^9.0.3",
+    "next": "^16.1.1",
+    "nodemailer": "^7.0.12",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.1.18",
     "@testing-library/jest-dom": "^6.9.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@vitest/ui": "^4.0.16",
-    "baseline-browser-mapping": "^2.9.12",
+    "@types/node": "^20.19.28",
+    "@types/nodemailer": "^7.0.5",
+    "@types/react": "^19.2.8",
+    "@types/react-dom": "^19.2.3",
+    "@vitest/ui": "^4.0.17",
+    "baseline-browser-mapping": "^2.9.14",
     "dotenv": "^17.2.3",
-    "eslint": "^9",
-    "eslint-config-next": "16.0.7",
-    "tailwindcss": "^4",
-    "tsx": "^4.20.6",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "^16.1.1",
+    "tailwindcss": "^4.1.18",
+    "tsx": "^4.21.0",
     "typescript": "^5",
-    "vitest": "^4.0.16"
+    "vitest": "^4.0.17"
   }
 }

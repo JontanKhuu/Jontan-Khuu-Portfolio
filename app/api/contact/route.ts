@@ -35,10 +35,15 @@ export async function POST(request: NextRequest) {
     if (contentLengthError) return contentLengthError;
 
     // Parse and validate JSON body
-    const { body, error: bodyError } = await parseJsonBody(request);
+    const { body, error: bodyError } = await parseJsonBody<{
+      name: string;
+      email: string;
+      message: string;
+      website?: string;
+    }>(request);
     if (bodyError) return bodyError;
 
-    const { name, email, message, website } = body; // website is the honeypot field
+    const { name, email, message, website } = body || {};
 
     // Honeypot check - if this field is filled, it's likely a bot
     if (website && typeof website === 'string' && website.trim().length > 0) {
