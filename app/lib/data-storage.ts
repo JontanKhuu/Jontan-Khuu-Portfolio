@@ -1,11 +1,13 @@
 /**
  * Data storage abstraction for JSON data files
  * Handles serverless environments where filesystem is read-only
+ * Uses Vercel KV for persistent storage in serverless environments
  */
 
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join, dirname } from 'path';
 import { existsSync } from 'fs';
+import { kv } from '@vercel/kv';
 import type { AboutData, SkillsData, ProjectsData, ResumeData } from './data-types';
 
 /**
@@ -18,39 +20,98 @@ function isServerless(): boolean {
 }
 
 /**
- * Get the path for reading data files
- * In serverless, we read from the original location (read-only)
+ * Get the KV key for a data file
  */
-function getReadPath(filename: string): string {
-  return join(process.cwd(), 'app', 'data', filename);
+function getKVKey(filename: string): string {
+  return `data:${filename}`;
 }
 
 /**
- * Get the path for writing data files
- * In serverless, we write to /tmp (writable)
- * In local dev, we write to the original location
+ * Read data from Vercel KV
  */
-function getWritePath(filename: string): string {
-  if (isServerless()) {
-    const tmpDir = '/tmp/app/data';
-    if (!existsSync(tmpDir)) {
-      mkdir(tmpDir, { recursive: true }).catch(console.error);
-    }
-    return join(tmpDir, filename);
+async function readFromKV(filename: string): Promise<string | null> {
+  try {
+    const key = getKVKey(filename);
+    const data = await kv.get<string>(key);
+    return data;
+  } catch (error) {
+    console.error(`Error reading from KV for ${filename}:`, error);
+    return null;
   }
-  return join(process.cwd(), 'app', 'data', filename);
+}
+
+/**
+ * Write data to Vercel KV
+ */
+async function writeToKV(filename: string, content: string): Promise<void> {
+  const key = getKVKey(filename);
+  await kv.set(key, content);
+}
+
+/**
+ * Normalize image URLs to fix path separator issues
+ */
+function normalizeImageUrls(data: unknown): unknown {
+  if (typeof data !== 'object' || data === null) {
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(normalizeImageUrls);
+  }
+
+  const normalized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (key === 'imageUrl' || key === 'fileUrl' || (key === 'url' && typeof value === 'string')) {
+      // Normalize path separators and ensure proper URL format
+      normalized[key] = typeof value === 'string' ? value.replace(/\\/g, '/') : value;
+    } else if (key === 'images' && Array.isArray(value)) {
+      // Handle project images array
+      normalized[key] = value.map((img: unknown) => {
+        if (typeof img === 'object' && img !== null && 'url' in img) {
+          return {
+            ...img,
+            url: typeof img.url === 'string' ? img.url.replace(/\\/g, '/') : img.url,
+          };
+        }
+        return img;
+      });
+    } else {
+      normalized[key] = normalizeImageUrls(value);
+    }
+  }
+  return normalized;
 }
 
 /**
  * Read a data file
+ * In serverless: reads from Vercel KV (persistent) if available, falls back to local files
+ * In local dev: reads from local filesystem
  */
 export async function readDataFile<T = AboutData | SkillsData | ProjectsData | ResumeData>(
   filename: string
 ): Promise<T> {
   try {
-    const path = getReadPath(filename);
-    const content = await readFile(path, 'utf8');
-    return JSON.parse(content) as T;
+    let content: string;
+    
+    if (isServerless()) {
+      // Try to read from KV first
+      const kvData = await readFromKV(filename);
+      if (kvData) {
+        content = kvData;
+      } else {
+        // Fall back to reading from git files (initial state)
+        const path = join(process.cwd(), 'app', 'data', filename);
+        content = await readFile(path, 'utf8');
+      }
+    } else {
+      const path = join(process.cwd(), 'app', 'data', filename);
+      content = await readFile(path, 'utf8');
+    }
+    
+    const parsed = JSON.parse(content) as T;
+    // Normalize any image URLs to fix path separator issues
+    return normalizeImageUrls(parsed) as T;
   } catch (error) {
     console.error(`Error reading ${filename}:`, error);
     throw error;
@@ -59,28 +120,27 @@ export async function readDataFile<T = AboutData | SkillsData | ProjectsData | R
 
 /**
  * Write a data file
- * In serverless, writes to /tmp (won't persist between invocations)
- * In local dev, writes to original location
+ * In serverless: writes to Vercel KV (persistent)
+ * In local dev: writes to local filesystem
  */
 export async function writeDataFile(
   filename: string,
   data: AboutData | SkillsData | ProjectsData | ResumeData
 ): Promise<void> {
   try {
-    const path = getWritePath(filename);
-    const dir = dirname(path);
-    
-    if (!existsSync(dir)) {
-      await mkdir(dir, { recursive: true });
-    }
-    
-    await writeFile(path, JSON.stringify(data, null, 2), 'utf8');
+    const content = JSON.stringify(data, null, 2);
     
     if (isServerless()) {
-      console.warn(
-        `[SERVERLESS] Data written to ${path} but won't persist. ` +
-        `Consider using a database or external storage.`
-      );
+      await writeToKV(filename, content);
+    } else {
+      const path = join(process.cwd(), 'app', 'data', filename);
+      const dir = dirname(path);
+      
+      if (!existsSync(dir)) {
+        await mkdir(dir, { recursive: true });
+      }
+      
+      await writeFile(path, content, 'utf8');
     }
   } catch (error) {
     console.error(`Error writing ${filename}:`, error);
