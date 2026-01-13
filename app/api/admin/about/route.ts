@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/app/lib/auth';
-import { readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
-
-const ABOUT_FILE = join(process.cwd(), 'app', 'data', 'about.json');
+import { readDataFile, writeDataFile } from '@/app/lib/data-storage';
 
 export async function GET() {
   try {
-    const fileContents = await readFile(ABOUT_FILE, 'utf8');
-    const data = JSON.parse(fileContents);
+    const data = await readDataFile('about.json');
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error reading about data:', error);
@@ -40,7 +36,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Write to file
-    await writeFile(ABOUT_FILE, JSON.stringify(body, null, 2), 'utf8');
+    await writeDataFile('about.json', body);
 
     return NextResponse.json({ success: true, data: body });
   } catch (error) {

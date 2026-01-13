@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/app/lib/auth';
-import { readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
-
-const SKILLS_FILE = join(process.cwd(), 'app', 'data', 'skills.json');
+import { readDataFile, writeDataFile } from '@/app/lib/data-storage';
 
 export async function GET() {
   try {
-    const fileContents = await readFile(SKILLS_FILE, 'utf8');
-    const data = JSON.parse(fileContents);
+    const data = await readDataFile('skills.json');
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error reading skills data:', error);
@@ -50,7 +46,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Write to file
-    await writeFile(SKILLS_FILE, JSON.stringify(body, null, 2), 'utf8');
+    await writeDataFile('skills.json', body);
 
     return NextResponse.json({ success: true, data: body });
   } catch (error) {

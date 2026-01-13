@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/app/lib/auth';
-import { readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
-
-const RESUME_FILE = join(process.cwd(), 'app', 'data', 'resume.json');
+import { readDataFile, writeDataFile } from '@/app/lib/data-storage';
 
 export async function GET() {
   try {
     // Try to read the resume file, if it doesn't exist, return default
     try {
-      const fileContents = await readFile(RESUME_FILE, 'utf8');
-      const data = JSON.parse(fileContents);
+      const data = await readDataFile('resume.json');
       return NextResponse.json(data);
     } catch (error) {
       // File doesn't exist, return default structure
@@ -49,7 +45,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Write to file
-    await writeFile(RESUME_FILE, JSON.stringify(body, null, 2), 'utf8');
+    await writeDataFile('resume.json', body);
 
     return NextResponse.json({ success: true, data: body });
   } catch (error) {

@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/app/lib/auth';
-import { readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
-
-const PROJECTS_FILE = join(process.cwd(), 'app', 'data', 'projects.json');
+import { readDataFile, writeDataFile } from '@/app/lib/data-storage';
 
 export async function GET() {
   try {
-    const fileContents = await readFile(PROJECTS_FILE, 'utf8');
-    const data = JSON.parse(fileContents);
+    const data = await readDataFile('projects.json');
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error reading projects data:', error);
@@ -86,7 +82,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Write to file
-    await writeFile(PROJECTS_FILE, JSON.stringify(body, null, 2), 'utf8');
+    await writeDataFile('projects.json', body);
 
     return NextResponse.json({ success: true, data: body });
   } catch (error) {
